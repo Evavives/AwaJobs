@@ -23,7 +23,7 @@ SOURCES = [
         "name": "HigherEdJobs — Psychology",
         "url": "https://www.higheredjobs.com/rss/categoryFeed.cfm?catID=91",
         "type": "rss",
-        "active": True,
+        "active": False,  # Surtout des postes US — désactivé par défaut
     },
     {
         "name": "Nature Careers",

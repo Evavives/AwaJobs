@@ -61,6 +61,22 @@ KEYWORDS_NEGATIVE = [
     "chemistry", "geology", "petroleum",
 ]
 
+# Lieux acceptés — bonus géographique
+GEO_POSITIVE = [
+    "belgium", "belgique", "bruxelles", "brussels", "ghent", "liège", "leuven",
+    "france", "paris", "lyon", "bordeaux", "montpellier", "strasbourg", "nancy",
+    "netherlands", "pays-bas", "amsterdam", "rotterdam", "leiden", "utrecht",
+    "uk", "united kingdom", "london", "oxford", "cambridge", "edinburgh",
+    "europe", "european", "remote", "à distance", "telework", "télétravail",
+    "hybrid", "hybride",
+]
+
+# Lieux à pénaliser (hors scope sauf remote)
+GEO_NEGATIVE = [
+    "usa", "united states", "canada", "australia", "china", "japan",
+    "india", "brazil", "singapore", "hong kong",
+]
+
 
 def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
@@ -88,6 +104,27 @@ def init_db():
             scraped_at TEXT
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS sources (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            name       TEXT NOT NULL,
+            url        TEXT NOT NULL UNIQUE,
+            type       TEXT DEFAULT 'rss',
+            active     INTEGER DEFAULT 1,
+            created_at TEXT NOT NULL
+        )
+    """)
+    # Pré-remplir avec les sources de sources.py si la table est vide
+    if conn.execute("SELECT COUNT(*) FROM sources").fetchone()[0] == 0:
+        try:
+            from scraper.sources import SOURCES
+            for s in SOURCES:
+                conn.execute(
+                    "INSERT OR IGNORE INTO sources (name, url, type, active, created_at) VALUES (?,?,?,?,?)",
+                    (s["name"], s["url"], s.get("type", "rss"), 1 if s.get("active") else 0, datetime.utcnow().isoformat())
+                )
+        except Exception:
+            pass
     conn.commit()
     conn.close()
     log.info("DB initialisée : %s", DB_PATH)
@@ -106,6 +143,17 @@ def score_job(title: str, description: str) -> int:
     for kw in KEYWORDS_NEGATIVE:
         if kw in text:
             score -= 3
+    # Bonus géographique
+    for geo in GEO_POSITIVE:
+        if geo in text:
+            score += 2
+            break  # un seul bonus geo positif
+    # Pénalité si hors Europe et pas remote
+    remote_mentioned = any(r in text for r in ["remote", "à distance", "telework", "hybrid"])
+    for geo in GEO_NEGATIVE:
+        if geo in text and not remote_mentioned:
+            score -= 4
+            break
     return max(score, 0)
 
 

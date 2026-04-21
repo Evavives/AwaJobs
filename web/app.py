@@ -160,5 +160,58 @@ def run_scraper():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+# ── Gestion des sources ───────────────────────────────────────────────────────
+
+@app.route("/sources")
+@login_required
+def sources_page():
+    conn = get_db()
+    sources = conn.execute("SELECT * FROM sources ORDER BY name").fetchall()
+    conn.close()
+    return render_template("sources.html", sources=sources)
+
+
+@app.route("/sources/add", methods=["POST"])
+@login_required
+def source_add():
+    name = request.form.get("name", "").strip()
+    url = request.form.get("url", "").strip()
+    if not name or not url:
+        return jsonify({"error": "Nom et URL requis"}), 400
+    conn = get_db()
+    try:
+        conn.execute(
+            "INSERT INTO sources (name, url, type, active, created_at) VALUES (?,?,?,1,?)",
+            (name, url, "rss", datetime.utcnow().isoformat())
+        )
+        conn.commit()
+    except Exception:
+        return jsonify({"error": "URL déjà existante"}), 409
+    finally:
+        conn.close()
+    return redirect(url_for("sources_page"))
+
+
+@app.route("/sources/<int:source_id>/toggle", methods=["POST"])
+@login_required
+def source_toggle(source_id):
+    conn = get_db()
+    conn.execute("UPDATE sources SET active = 1 - active WHERE id = ?", (source_id,))
+    conn.commit()
+    active = conn.execute("SELECT active FROM sources WHERE id = ?", (source_id,)).fetchone()[0]
+    conn.close()
+    return jsonify({"ok": True, "active": bool(active)})
+
+
+@app.route("/sources/<int:source_id>/delete", methods=["POST"])
+@login_required
+def source_delete(source_id):
+    conn = get_db()
+    conn.execute("DELETE FROM sources WHERE id = ?", (source_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("sources_page"))
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)

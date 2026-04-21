@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; width: 320px; padding: 16px; background: #f8f7f4; }
+    .logo { font-weight: 600; font-size: 15px; margin-bottom: 12px; }
+    .logo span { color: #2563eb; }
+    label { display: block; font-size: 12px; color: #6b6966; margin-bottom: 3px; margin-top: 10px; }
+    input, textarea { width: 100%; padding: 7px 10px; border: 1px solid #e5e3de; border-radius: 7px; font-size: 13px; font-family: inherit; }
+    textarea { resize: vertical; min-height: 70px; }
+    input:focus, textarea:focus { outline: none; border-color: #2563eb; }
+    .btn { margin-top: 14px; width: 100%; padding: 9px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; }
+    .btn:hover { background: #1d4ed8; }
+    .btn:disabled { background: #93c5fd; cursor: default; }
+    #status { margin-top: 10px; font-size: 13px; text-align: center; min-height: 20px; }
+    .success { color: #16a34a; }
+    .error { color: #dc2626; }
+    .settings { margin-top: 14px; border-top: 1px solid #e5e3de; padding-top: 12px; }
+    .settings label { font-size: 11px; }
+    .settings input { font-size: 12px; padding: 5px 8px; }
+  </style>
+</head>
+<body>
+  <div class="logo">Awa<span>Jobs</span> Clipper</div>
+
+  <label>Titre du poste</label>
+  <input type="text" id="title" placeholder="Ex: Postdoc in Social Neuroscience">
+
+  <label>URL</label>
+  <input type="url" id="url" placeholder="https://...">
+
+  <label>Description (optionnel)</label>
+  <textarea id="description" placeholder="Colle le texte de l'offre..."></textarea>
+
+  <label>Localisation</label>
+  <input type="text" id="location" placeholder="Ex: Bruxelles, Remote">
+
+  <button class="btn" id="sendBtn" onclick="sendJob()">Envoyer vers AwaJobs</button>
+  <div id="status"></div>
+
+  <div class="settings">
+    <label>URL du dashboard (à configurer une fois)</label>
+    <input type="url" id="dashUrl" placeholder="http://192.168.68.103:5000">
+    <button class="btn" style="margin-top:8px; background:#6b6966;" onclick="saveSettings()">Sauvegarder l'URL</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

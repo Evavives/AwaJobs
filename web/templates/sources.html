@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AwaJobs — Sources</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f8f7f4; --surface: #ffffff; --border: #e5e3de;
+      --text: #1a1a18; --muted: #6b6966; --accent: #2563eb;
+      --green: #16a34a; --red: #dc2626; --radius: 10px;
+    }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; }
+    a { color: var(--accent); text-decoration: none; }
+
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 10; }
+    .logo { font-weight: 600; font-size: 16px; letter-spacing: -0.02em; }
+    .logo span { color: var(--accent); }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; cursor: pointer; }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+    h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+    .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 2rem; }
+
+    /* Formulaire ajout */
+    .add-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 2rem; }
+    .add-form h2 { font-size: 15px; font-weight: 500; margin-bottom: 1rem; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .form-row input { flex: 1; min-width: 180px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
+    .form-row input:focus { outline: none; border-color: var(--accent); }
+
+    /* Liste sources */
+    .source-list { display: flex; flex-direction: column; gap: 8px; }
+    .source-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1rem; }
+    .source-card.inactive { opacity: 0.5; }
+    .source-info { flex: 1; min-width: 0; }
+    .source-name { font-weight: 500; font-size: 14px; }
+    .source-url { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; }
+    .source-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    .toggle-btn { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border); font-size: 12px; cursor: pointer; background: none; }
+    .toggle-btn.active { background: #dcfce7; border-color: #86efac; color: var(--green); }
+    .toggle-btn.inactive { background: #f3f4f6; color: var(--muted); }
+    .delete-btn { padding: 4px 10px; border-radius: 6px; border: 1px solid #fca5a5; background: none; color: var(--red); font-size: 12px; cursor: pointer; }
+    .delete-btn:hover { background: #fee2e2; }
+
+    .empty { text-align: center; padding: 3rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Awa<span>Jobs</span> — Sources</div>
+  <a href="/" class="btn">← Dashboard</a>
+</header>
+
+<div class="container">
+  <h1>Gestion des sources</h1>
+  <p class="subtitle">Active, désactive ou supprime des flux RSS. Seules les sources actives sont collectées.</p>
+
+  <!-- Formulaire ajout -->
+  <div class="add-form">
+    <h2>Ajouter une source RSS</h2>
+    <form method="POST" action="/sources/add">
+      <div class="form-row">
+        <input type="text" name="name" placeholder="Nom (ex: CNRS Emploi)" required>
+        <input type="url" name="url" placeholder="URL du flux RSS" required>
+        <button type="submit" class="btn btn-primary">Ajouter</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Liste des sources -->
+  <div class="source-list">
+    {% if sources %}
+      {% for s in sources %}
+      <div class="source-card {% if not s.active %}inactive{% endif %}" id="src-{{ s.id }}">
+        <div class="source-info">
+          <div class="source-name">{{ s.name }}</div>
+          <div class="source-url">{{ s.url }}</div>
+        </div>
+        <div class="source-actions">
+          <button class="toggle-btn {% if s.active %}active{% else %}inactive{% endif %}"
+                  onclick="toggleSource({{ s.id }}, this)">
+            {% if s.active %}● Actif{% else %}○ Muet{% endif %}
+          </button>
+          <form method="POST" action="/sources/{{ s.id }}/delete" style="display:inline"
+                onsubmit="return confirm('Supprimer cette source ?')">
+            <button type="submit" class="delete-btn">Supprimer</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">Aucune source configurée — ajoutes-en une ci-dessus !</div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function toggleSource(id, btn) {
+  fetch(`/sources/${id}/toggle`, { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      const card = document.getElementById('src-' + id);
+      if (d.active) {
+        btn.textContent = '● Actif';
+        btn.className = 'toggle-btn active';
+        card.classList.remove('inactive');
+      } else {
+        btn.textContent = '○ Muet';
+        btn.className = 'toggle-btn inactive';
+        card.classList.add('inactive');
+      }
+    });
+}
+</script>
+</body>
+</html>
