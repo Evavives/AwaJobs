@@ -98,7 +98,7 @@
     </div>
     <div class="stat-card">
       <div class="stat-val" style="color:var(--green)">{{ stats.yes }}</div>
-      <div class="stat-label">Postulées</div>
+      <div class="stat-label">Approuvées</div>
     </div>
     <div class="stat-card">
       <div class="stat-val" style="color:var(--red)">{{ stats.no }}</div>
@@ -121,7 +121,7 @@
   </div>
 
   <div class="tab-bar">
-    {% for tab, label in [('all','Toutes'), ('new','Nouvelles'), ('yes','Postulées'), ('maybe','À voir'), ('no','Rejetées')] %}
+    {% for tab, label in [('all','Toutes'), ('new','Nouvelles'), ('yes','Approuvées'), ('maybe','À voir'), ('no','Rejetées')] %}
     <button class="tab {% if label_filter==tab %}active{% endif %}"
             onclick="applyFilter('label', '{{ tab }}')">{{ label }}</button>
     {% endfor %}
@@ -154,7 +154,7 @@
           {% endif %}
           <div class="job-actions">
             <button class="action-btn yes   {% if job.label=='yes'   %}active{% endif %}"
-                    onclick="label('{{ job.id }}', 'yes')">✓ Postulé</button>
+                    onclick="label('{{ job.id }}', 'yes')">✓ Approuver</button>
             <button class="action-btn maybe {% if job.label=='maybe' %}active{% endif %}"
                     onclick="label('{{ job.id }}', 'maybe')">~ À voir</button>
             <button class="action-btn no    {% if job.label=='no'    %}active{% endif %}"
