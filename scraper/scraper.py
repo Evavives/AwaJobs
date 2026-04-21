@@ -106,8 +106,26 @@ GEO_POSITIVE = [
 
 # Lieux à pénaliser (hors scope sauf remote)
 GEO_NEGATIVE = [
-    "usa", "united states", "canada", "australia", "china", "japan",
-    "india", "brazil", "singapore", "hong kong",
+    # Amérique du Nord
+    "usa", "united states", "u.s.", "u.s.a",
+    "new york", "california", "boston", "chicago", "los angeles",
+    "san francisco", "seattle", "houston", "washington dc",
+    "massachusetts", "new haven", "stanford", "michigan",
+    "canada", "toronto", "montreal", "montréal", "vancouver", "ontario",
+    # Océanie
+    "australia", "sydney", "melbourne", "brisbane", "canberra",
+    "new zealand", "nouvelle-zélande",
+    # Asie
+    "china", "beijing", "shanghai", "hong kong",
+    "japan", "tokyo", "osaka",
+    "india", "bangalore", "mumbai", "delhi",
+    "singapore", "south korea", "seoul", "taiwan",
+    # Amérique du Sud
+    "brazil", "brasil", "são paulo", "rio de janeiro",
+    "argentina", "chile", "colombia",
+    # Moyen-Orient / Afrique
+    "saudi arabia", "dubai", "qatar", "uae",
+    "south africa",
 ]
 
 
@@ -202,10 +220,14 @@ def score_job(title: str, description: str) -> int:
             score += 2
             break
     remote_mentioned = any(r in text for r in ["remote", "à distance", "telework", "hybrid"])
-    for geo in GEO_NEGATIVE:
-        if geo in text and not remote_mentioned:
-            score -= 4
-            break
+    has_geo_positive = any(g in text for g in GEO_POSITIVE)
+    has_geo_negative = any(g in text for g in GEO_NEGATIVE)
+
+    if has_geo_negative and not remote_mentioned:
+        if not has_geo_positive:
+            # Hors Europe sans remote → score forcé à 0
+            return 0
+        score -= 4
 
     # Si modèle ML disponible, remplace le score par la proba ML (0-20)
     model = _get_ml_model()
@@ -213,9 +235,8 @@ def score_job(title: str, description: str) -> int:
         try:
             from scraper.ml_model import predict_score
             ml_proba = predict_score(model, title, description)
-            # Convertir proba (0-1) en score (0-20), avec bonus géo conservé
-            geo_bonus = 2 if any(g in text for g in GEO_POSITIVE) else 0
-            geo_penalty = -4 if any(g in text for g in GEO_NEGATIVE) and not remote_mentioned else 0
+            geo_bonus = 2 if has_geo_positive else 0
+            geo_penalty = -4 if has_geo_negative and not remote_mentioned else 0
             return max(0, int(ml_proba * 20) + geo_bonus + geo_penalty)
         except Exception:
             pass
@@ -477,6 +498,18 @@ def run():
     for job in all_jobs:
         if save_job(conn, job):
             total_new += 1
+
+    # Purge automatique : supprimer les offres "no" de plus de 90 jours
+    try:
+        from datetime import timedelta
+        cutoff = (datetime.utcnow() - timedelta(days=3)).isoformat()
+        deleted = conn.execute(
+            "DELETE FROM jobs WHERE label='no' AND created_at < ?", (cutoff,)
+        ).rowcount
+        if deleted:
+            log.info("Purge auto : %d offres 'no' supprimées (> 90 jours)", deleted)
+    except Exception as e:
+        log.error("Purge auto erreur : %s", e)
 
     conn.commit()
     conn.close()
