@@ -3,6 +3,11 @@
   "name": "AwaJobs Clipper",
   "version": "1.0",
   "description": "Envoie une offre d'emploi vers ton dashboard AwaJobs en un clic.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "awajobs-clipper@awajobs"
+    }
+  },
   "permissions": ["activeTab", "storage"],
   "action": {
     "default_popup": "popup.html",
