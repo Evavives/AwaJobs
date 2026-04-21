@@ -105,7 +105,7 @@ GEO_NEGATIVE = [
 
 def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS jobs (
             id          TEXT PRIMARY KEY,
@@ -308,7 +308,7 @@ def scrape_jobbnorge() -> list:
 # ── Main ──────────────────────────────────────────────────────────────────────
 def run():
     init_db()
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     total_new = 0
 
     all_jobs = []
