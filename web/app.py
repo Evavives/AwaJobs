@@ -93,7 +93,7 @@ def index():
 @app.route("/label/<job_id>/<label>", methods=["POST"])
 @login_required
 def set_label(job_id, label):
-    if label not in ("yes", "no", "maybe", "new"):
+    if label not in ("yes", "no", "maybe", "new", "applied"):
         return jsonify({"error": "invalid label"}), 400
     conn = get_db()
     conn.execute("UPDATE jobs SET label=? WHERE id=?", (label, job_id))
