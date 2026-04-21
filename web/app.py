@@ -146,18 +146,10 @@ def add_manual():
     return render_template("add.html")
 
 
-@app.route("/api/clip", methods=["POST", "OPTIONS"])
+@app.route("/api/clip", methods=["POST"])
 def api_clip():
     """Endpoint pour l'extension Firefox — protégé par API key."""
-    # CORS preflight
-    if request.method == "OPTIONS":
-        resp = jsonify({})
-        resp.headers["Access-Control-Allow-Origin"] = "*"
-        resp.headers["Access-Control-Allow-Headers"] = "X-Api-Key, Content-Type"
-        resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
-        return resp, 204
-
-    api_key = request.headers.get("X-Api-Key", "")
+    api_key = request.form.get("api_key", "")
     expected = os.environ.get("DASHBOARD_PASSWORD", "")
     if not expected or api_key != expected:
         resp = jsonify({"error": "Non autorisé"})

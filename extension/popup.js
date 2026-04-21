@@ -49,13 +49,13 @@ async function sendJob() {
     formData.append("description", description);
     formData.append("location", location);
     formData.append("source", getDomain(url));
+    formData.append("api_key", apiKey);
 
     const endpoint = `${dashUrl}/api/clip`;
     let resp;
     try {
       resp = await fetch(endpoint, {
         method: "POST",
-        headers: { "X-Api-Key": apiKey },
         body: formData,
       });
     } catch (networkErr) {
