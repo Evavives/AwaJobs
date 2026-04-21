@@ -146,13 +146,23 @@ def add_manual():
     return render_template("add.html")
 
 
-@app.route("/api/clip", methods=["POST"])
+@app.route("/api/clip", methods=["POST", "OPTIONS"])
 def api_clip():
     """Endpoint pour l'extension Firefox — protégé par API key."""
+    # CORS preflight
+    if request.method == "OPTIONS":
+        resp = jsonify({})
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        resp.headers["Access-Control-Allow-Headers"] = "X-Api-Key, Content-Type"
+        resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        return resp, 204
+
     api_key = request.headers.get("X-Api-Key", "")
     expected = os.environ.get("DASHBOARD_PASSWORD", "")
     if not expected or api_key != expected:
-        return jsonify({"error": "Non autorisé"}), 401
+        resp = jsonify({"error": "Non autorisé"})
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        return resp, 401
 
     import hashlib
     from scraper.scraper import score_job
@@ -180,7 +190,9 @@ def api_clip():
         conn.commit()
     finally:
         conn.close()
-    return jsonify({"ok": True})
+    resp = jsonify({"ok": True})
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    return resp
 
 
 @app.route("/run-scraper", methods=["POST"])
