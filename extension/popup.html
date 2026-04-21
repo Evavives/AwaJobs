@@ -37,7 +37,7 @@
   <label>Localisation</label>
   <input type="text" id="location" placeholder="Ex: Bruxelles, Remote">
 
-  <button class="btn" id="sendBtn" onclick="sendJob()">Envoyer vers AwaJobs</button>
+  <button class="btn" id="sendBtn">Envoyer vers AwaJobs</button>
   <div id="status"></div>
 
   <div class="settings">
@@ -45,7 +45,7 @@
     <input type="url" id="dashUrl" placeholder="http://192.168.68.103:5000">
     <label style="margin-top:8px;">Mot de passe dashboard</label>
     <input type="password" id="apiKey" placeholder="Ton DASHBOARD_PASSWORD">
-    <button class="btn" style="margin-top:8px; background:#6b6966;" onclick="saveSettings()">Sauvegarder</button>
+    <button class="btn" id="saveBtn" style="margin-top:8px; background:#6b6966;">Sauvegarder</button>
   </div>
 
   <script src="popup.js"></script>

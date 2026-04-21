@@ -1,3 +1,6 @@
+document.getElementById("sendBtn").addEventListener("click", sendJob);
+document.getElementById("saveBtn").addEventListener("click", saveSettings);
+
 // Pré-remplir les champs avec la page courante
 chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   const tab = tabs[0];
