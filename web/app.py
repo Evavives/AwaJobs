@@ -28,8 +28,9 @@ def load_user(user_id):
 def login():
     error = None
     if request.method == "POST":
-        pwd = request.form.get("password")
-        if pwd == os.environ.get("DASHBOARD_PASSWORD", ""):
+        pwd = request.form.get("password", "")
+        expected = os.environ.get("DASHBOARD_PASSWORD", "").strip().strip('"').strip("'")
+        if pwd == expected:
             login_user(User(), remember=True)
             return redirect(url_for("index"))
         error = "Mot de passe incorrect"
