@@ -5,10 +5,40 @@ AwaJobs - Dashboard web (Flask)
 import sqlite3
 import os
 from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 from datetime import datetime
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "awajobs-dev-key-change-me")
 DB_PATH = os.environ.get("DB_PATH", "/data/awajobs.db")
+
+# --- Auth ---
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
+
+class User(UserMixin):
+    id = "1"
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User() if user_id == "1" else None
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+    if request.method == "POST":
+        pwd = request.form.get("password")
+        if pwd == os.environ.get("DASHBOARD_PASSWORD", ""):
+            login_user(User(), remember=True)
+            return redirect(url_for("index"))
+        error = "Mot de passe incorrect"
+    return render_template("login.html", error=error)
+
+@app.route("/logout")
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
 
 
 def get_db():
