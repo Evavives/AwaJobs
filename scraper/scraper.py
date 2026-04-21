@@ -71,7 +71,15 @@ KEYWORDS_POSITIVE = [
 KEYWORDS_NEGATIVE = [
     "manufacturing", "mechanical engineer", "electrical engineer",
     "software engineer", "infrastructure", "devops", "physics",
-    "chemistry", "geology", "petroleum",
+    "geology", "petroleum",
+    # Chimie / biologie moléculaire
+    "chemistry", "chimie", "chemical", "chimique",
+    "molecular biology", "biologie moléculaire", "molecular", "moléculaire",
+    "biochemistry", "biochimie", "biochemical",
+    "biomedical", "biomédical", "biomedicine",
+    # Maths / stats pures
+    "mathematics", "mathématiques", "maths", "mathematician",
+    "algebraic", "topology", "number theory",
     # Vision
     "computer vision", "vision artificielle", "image recognition",
     "object detection", "visual recognition",
@@ -159,7 +167,27 @@ def make_id(url: str) -> str:
     return hashlib.md5(url.encode()).hexdigest()
 
 
+# Chargement paresseux du modèle ML
+_ml_model = None
+_ml_model_loaded = False
+
+
+def _get_ml_model():
+    global _ml_model, _ml_model_loaded
+    if not _ml_model_loaded:
+        try:
+            from scraper.ml_model import load_model
+            _ml_model = load_model()
+            if _ml_model:
+                log.info("Modèle ML chargé.")
+        except Exception as e:
+            log.warning("ML model non disponible : %s", e)
+        _ml_model_loaded = True
+    return _ml_model
+
+
 def score_job(title: str, description: str) -> int:
+    # Scoring par mots-clés (toujours calculé)
     text = (title + " " + description).lower()
     score = 0
     for kw in KEYWORDS_POSITIVE:
@@ -172,13 +200,26 @@ def score_job(title: str, description: str) -> int:
     for geo in GEO_POSITIVE:
         if geo in text:
             score += 2
-            break  # un seul bonus geo positif
-    # Pénalité si hors Europe et pas remote
+            break
     remote_mentioned = any(r in text for r in ["remote", "à distance", "telework", "hybrid"])
     for geo in GEO_NEGATIVE:
         if geo in text and not remote_mentioned:
             score -= 4
             break
+
+    # Si modèle ML disponible, remplace le score par la proba ML (0-20)
+    model = _get_ml_model()
+    if model:
+        try:
+            from scraper.ml_model import predict_score
+            ml_proba = predict_score(model, title, description)
+            # Convertir proba (0-1) en score (0-20), avec bonus géo conservé
+            geo_bonus = 2 if any(g in text for g in GEO_POSITIVE) else 0
+            geo_penalty = -4 if any(g in text for g in GEO_NEGATIVE) and not remote_mentioned else 0
+            return max(0, int(ml_proba * 20) + geo_bonus + geo_penalty)
+        except Exception:
+            pass
+
     return max(score, 0)
 
 
@@ -194,6 +235,74 @@ def save_job(conn, job: dict):
         job,
     )
     return True
+
+
+def scrape_inserm() -> list:
+    log.info("INSERM Softy")
+    jobs = []
+    headers = {"User-Agent": "Mozilla/5.0 AwaJobs/1.0"}
+    try:
+        resp = requests.get("https://inserm.softy.pro/offres", headers=headers, timeout=15)
+        soup = BeautifulSoup(resp.text, "html.parser")
+        for item in soup.select("article, .offer, .job, li.vacancy, div.offer-item, .card"):
+            title_el = item.select_one("h2, h3, h4, .title, .offer-title, a")
+            link_el = item.select_one("a[href]")
+            if not title_el or not link_el:
+                continue
+            title = title_el.get_text(strip=True)
+            href = link_el["href"]
+            full_url = href if href.startswith("http") else "https://inserm.softy.pro" + href
+            location_el = item.select_one(".location, .lieu, .city")
+            location = location_el.get_text(strip=True) if location_el else "France"
+            desc_el = item.select_one("p, .description, .summary")
+            description = desc_el.get_text(strip=True) if desc_el else ""
+            jobs.append({
+                "id": make_id(full_url),
+                "title": title,
+                "source": "INSERM",
+                "url": full_url,
+                "description": description[:2000],
+                "location": location,
+                "score": score_job(title, description + " france europe"),
+                "created_at": datetime.utcnow().isoformat(),
+            })
+    except Exception as e:
+        log.error("Erreur INSERM : %s", e)
+    log.info("  → %d offres trouvées", len(jobs))
+    return jobs
+
+
+def scrape_jrc() -> list:
+    log.info("JRC European Commission")
+    jobs = []
+    headers = {"User-Agent": "Mozilla/5.0 AwaJobs/1.0"}
+    try:
+        resp = requests.get("https://recruitment.jrc.ec.europa.eu/vacancies", headers=headers, timeout=15)
+        soup = BeautifulSoup(resp.text, "html.parser")
+        for item in soup.select("article, .vacancy, .job-item, tr.vacancy-row, div.vacancy-item"):
+            title_el = item.select_one("h2, h3, h4, .title, a")
+            link_el = item.select_one("a[href]")
+            if not title_el or not link_el:
+                continue
+            title = title_el.get_text(strip=True)
+            href = link_el["href"]
+            full_url = href if href.startswith("http") else "https://recruitment.jrc.ec.europa.eu" + href
+            desc_el = item.select_one("p, .description, .summary")
+            description = desc_el.get_text(strip=True) if desc_el else ""
+            jobs.append({
+                "id": make_id(full_url),
+                "title": title,
+                "source": "JRC (EU Commission)",
+                "url": full_url,
+                "description": description[:2000],
+                "location": "Europe",
+                "score": score_job(title, description + " europe belgium"),
+                "created_at": datetime.utcnow().isoformat(),
+            })
+    except Exception as e:
+        log.error("Erreur JRC : %s", e)
+    log.info("  → %d offres trouvées", len(jobs))
+    return jobs
 
 
 # ── Scrapers ──────────────────────────────────────────────────────────────────
@@ -318,6 +427,8 @@ def run():
         all_jobs.extend(scrape_rss(source))
     all_jobs.extend(scrape_cnrs())
     all_jobs.extend(scrape_jobbnorge())
+    all_jobs.extend(scrape_inserm())
+    all_jobs.extend(scrape_jrc())
 
     # Emails transférés (LinkedIn alerts, etc.)
     try:

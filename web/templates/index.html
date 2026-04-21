@@ -83,6 +83,7 @@
     <a href="/add" class="btn">+ Ajouter manuellement</a>
     <a href="/sources" class="btn">⚙ Sources</a>
     <button class="btn btn-primary" onclick="runScraper()">Lancer la collecte</button>
+    <button class="btn" style="background:#7c3aed;color:white" onclick="trainModel()">🧠 Entraîner ML</button>
   </div>
 </header>
 
@@ -201,6 +202,19 @@ function runScraper() {
       if (d.ok) {
         toast(`${d.new} nouvelles offres ajoutées !`);
         setTimeout(() => location.reload(), 1500);
+      } else {
+        toast('Erreur : ' + d.error);
+      }
+    });
+}
+
+function trainModel() {
+  toast('Entraînement en cours…');
+  fetch('/train-model', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        toast('🧠 Modèle entraîné ! Les nouveaux scores utilisent le ML.');
       } else {
         toast('Erreur : ' + d.error);
       }

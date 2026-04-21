@@ -201,6 +201,27 @@ def run_scraper():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+@app.route("/train-model", methods=["POST"])
+@login_required
+def train_model():
+    """Entraîne le modèle ML sur les offres labelisées"""
+    try:
+        import sys
+        sys.path.insert(0, "/app")
+        from scraper.ml_model import train, stats
+        import io, logging
+        buf = io.StringIO()
+        handler = logging.StreamHandler(buf)
+        logging.getLogger().addHandler(handler)
+        model = train()
+        logging.getLogger().removeHandler(handler)
+        if model is None:
+            return jsonify({"ok": False, "error": "Pas assez de données labelisées (min 5 yes + 5 no)"})
+        return jsonify({"ok": True, "message": buf.getvalue() or "Modèle entraîné ✓"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 # ── Gestion des sources ───────────────────────────────────────────────────────
 
 @app.route("/sources")

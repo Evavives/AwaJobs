@@ -5,3 +5,4 @@ beautifulsoup4==4.12.3
 apscheduler==3.10.4
 gunicorn==22.0.0
 flask-login
+scikit-learn==1.4.2
