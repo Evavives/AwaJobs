@@ -45,20 +45,45 @@ RSS_SOURCES = [
 
 # ── Mots-clés pour le scoring ─────────────────────────────────────────────
 KEYWORDS_POSITIVE = [
-    "postdoc", "post-doc", "post doc", "researcher", "research fellow",
+    "postdoc", "post-doc", "post doc", "postdoctorat", "poste",
+    "researcher", "research fellow", "lecturer",
     "research officer", "project officer", "behavioral scientist",
     "behavioural scientist", "assistant editor", "research assistant",
-    "ingénieur de recherche", "chargé de recherche",
+    "ingénieur de recherche", "chargé de recherche", "maître de conférences",
     "psychology", "psychologie", "neuroscience", "neuropsychology",
     "neurophysiology", "cognitive", "behavioral", "behavioural",
-    "affective", "social neuroscience", "eeg", "fmri", "brain",
-    "mental health", "cognition", "perception",
+    "affective", "social neuroscience", "social psychology",
+    "psychologie sociale", "moral psychology", "psychologie morale",
+    "morale", "morality", "moral", "ethics", "ethical",
+    "psychologie cognitive", "cognitive psychology",
+    "psychologie expérimentale", "experimental psychology",
+    "sciences cognitives", "cognitive science",
+    "eeg", "fmri", "brain", "mental health", "cognition", "perception",
+    "cooperation", "coopération", "social norms", "normes sociales",
+    "punishment", "punition", "sanctions", "emotions", "émotion",
+    "culture", "cross-cultural", "intercultural",
+    "self identity", "self-identity", "identité", "moral judgment", "moral judgement",
+    "jugement moral", "process dissociation", "dual process",
+    "political psychology", "psychologie politique",
+    "cross-cultural psychology", "psychologie interculturelle",
 ]
 
 KEYWORDS_NEGATIVE = [
     "manufacturing", "mechanical engineer", "electrical engineer",
     "software engineer", "infrastructure", "devops", "physics",
     "chemistry", "geology", "petroleum",
+    # Vision
+    "computer vision", "vision artificielle", "image recognition",
+    "object detection", "visual recognition",
+    "visual neuroscience", "visual system", "visual cortex",
+    "visual perception", "visionlist", "optic", "retina", "retinal",
+    # NLP / TAL
+    "nlp", "natural language processing", "traitement automatique",
+    "tal ", "traitement du langage", "language model", "large language",
+    "text mining", "speech recognition", "text classification",
+    # Neurolinguistique / parole
+    "neurolinguistic", "neurolinguistique", "perception de la parole",
+    "speech perception", "phonology", "phonologie", "langage oral",
 ]
 
 # Lieux acceptés — bonus géographique
