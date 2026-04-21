@@ -5,34 +5,31 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   document.getElementById("title").value = tab.title || "";
 });
 
-// Charger l'URL du dashboard sauvegardée
-chrome.storage.local.get("dashUrl", (data) => {
-  if (data.dashUrl) {
-    document.getElementById("dashUrl").value = data.dashUrl;
-  }
+// Charger les paramètres sauvegardés
+chrome.storage.local.get(["dashUrl", "apiKey"], (data) => {
+  if (data.dashUrl) document.getElementById("dashUrl").value = data.dashUrl;
+  if (data.apiKey) document.getElementById("apiKey").value = data.apiKey;
 });
 
 function saveSettings() {
   const url = document.getElementById("dashUrl").value.trim();
-  chrome.storage.local.set({ dashUrl: url });
-  showStatus("URL sauvegardée ✓", "success");
+  const key = document.getElementById("apiKey").value.trim();
+  chrome.storage.local.set({ dashUrl: url, apiKey: key });
+  showStatus("Paramètres sauvegardés ✓", "success");
 }
 
 async function sendJob() {
   const btn = document.getElementById("sendBtn");
-  const status = document.getElementById("status");
 
   const title = document.getElementById("title").value.trim();
   const url = document.getElementById("url").value.trim();
   const description = document.getElementById("description").value.trim();
   const location = document.getElementById("location").value.trim();
-
-  if (!title || !url) {
-    showStatus("Titre et URL requis.", "error");
-    return;
-  }
-
   const dashUrl = document.getElementById("dashUrl").value.trim() || "http://192.168.68.103:5000";
+  const apiKey = document.getElementById("apiKey").value.trim();
+
+  if (!title || !url) { showStatus("Titre et URL requis.", "error"); return; }
+  if (!apiKey) { showStatus("Entre ton mot de passe dashboard dans les paramètres.", "error"); return; }
 
   btn.disabled = true;
   btn.textContent = "Envoi…";
@@ -45,16 +42,18 @@ async function sendJob() {
     formData.append("location", location);
     formData.append("source", getDomain(url));
 
-    const resp = await fetch(`${dashUrl}/add`, {
+    const resp = await fetch(`${dashUrl}/api/clip`, {
       method: "POST",
+      headers: { "X-Api-Key": apiKey },
       body: formData,
     });
 
-    if (resp.ok || resp.redirected) {
+    const data = await resp.json();
+    if (data.ok) {
       showStatus("✓ Offre ajoutée au dashboard !", "success");
       setTimeout(() => window.close(), 1500);
     } else {
-      showStatus("Erreur serveur : " + resp.status, "error");
+      showStatus("Erreur : " + (data.error || resp.status), "error");
     }
   } catch (e) {
     showStatus("Impossible de contacter le dashboard. Vérifie que tu es sur le bon réseau.", "error");
@@ -66,7 +65,7 @@ async function sendJob() {
 
 function getDomain(url) {
   try { return new URL(url).hostname.replace("www.", ""); }
-  catch { return "Manuel"; }
+  catch { return "Extension"; }
 }
 
 function showStatus(msg, type) {

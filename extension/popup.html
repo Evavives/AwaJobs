@@ -43,7 +43,9 @@
   <div class="settings">
     <label>URL du dashboard (à configurer une fois)</label>
     <input type="url" id="dashUrl" placeholder="http://192.168.68.103:5000">
-    <button class="btn" style="margin-top:8px; background:#6b6966;" onclick="saveSettings()">Sauvegarder l'URL</button>
+    <label style="margin-top:8px;">Mot de passe dashboard</label>
+    <input type="password" id="apiKey" placeholder="Ton DASHBOARD_PASSWORD">
+    <button class="btn" style="margin-top:8px; background:#6b6966;" onclick="saveSettings()">Sauvegarder</button>
   </div>
 
   <script src="popup.js"></script>

@@ -146,6 +146,43 @@ def add_manual():
     return render_template("add.html")
 
 
+@app.route("/api/clip", methods=["POST"])
+def api_clip():
+    """Endpoint pour l'extension Firefox — protégé par API key."""
+    api_key = request.headers.get("X-Api-Key", "")
+    expected = os.environ.get("DASHBOARD_PASSWORD", "")
+    if not expected or api_key != expected:
+        return jsonify({"error": "Non autorisé"}), 401
+
+    import hashlib
+    from scraper.scraper import score_job
+    url = request.form.get("url", "")
+    title = request.form.get("title", "")
+    description = request.form.get("description", "")
+    location = request.form.get("location", "")
+    source = request.form.get("source", "Extension")
+
+    if not title or not url:
+        return jsonify({"error": "Titre et URL requis"}), 400
+
+    job_id = hashlib.md5(url.encode()).hexdigest()
+    score = score_job(title, description)
+
+    conn = get_db()
+    try:
+        conn.execute(
+            """INSERT OR IGNORE INTO jobs
+               (id, title, source, url, description, location, score, label, created_at)
+               VALUES (?,?,?,?,?,?,?,'new',?)""",
+            (job_id, title, source, url, description[:2000], location, score,
+             datetime.utcnow().isoformat())
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
 @app.route("/run-scraper", methods=["POST"])
 @login_required
 def run_scraper():

@@ -202,38 +202,81 @@ def scrape_rss(source: dict) -> list:
 def scrape_cnrs() -> list:
     log.info("CNRS emploi.cnrs.fr")
     jobs = []
-    try:
-        url = "https://emploi.cnrs.fr/Offres/Recherche.aspx?domaine=6"
-        headers = {"User-Agent": "Mozilla/5.0 AwaJobs/1.0"}
-        resp = requests.get(url, headers=headers, timeout=15)
-        soup = BeautifulSoup(resp.text, "html.parser")
+    headers = {"User-Agent": "Mozilla/5.0 AwaJobs/1.0"}
+    urls = [
+        "https://emploi.cnrs.fr/Offres/Recherche.aspx",           # toutes disciplines
+        "https://emploi.cnrs.fr/Offres/Recherche.aspx?domaine=6",  # sciences de la vie
+    ]
+    seen = set()
+    for url in urls:
+        try:
+            resp = requests.get(url, headers=headers, timeout=15)
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for item in soup.select(".offer-item, .job-item, article.offer"):
+                title_el = item.select_one("h2, h3, .offer-title")
+                link_el = item.select_one("a[href]")
+                if not title_el or not link_el:
+                    continue
+                title = title_el.get_text(strip=True)
+                href = link_el["href"]
+                full_url = href if href.startswith("http") else "https://emploi.cnrs.fr" + href
+                if full_url in seen:
+                    continue
+                seen.add(full_url)
+                location_el = item.select_one(".location, .lieu")
+                location = location_el.get_text(strip=True) if location_el else ""
+                desc_el = item.select_one(".description, .summary, p")
+                description = desc_el.get_text(strip=True) if desc_el else ""
+                jobs.append({
+                    "id": make_id(full_url),
+                    "title": title,
+                    "source": "CNRS Emploi",
+                    "url": full_url,
+                    "description": description[:2000],
+                    "location": location,
+                    "score": score_job(title, description),
+                    "created_at": datetime.utcnow().isoformat(),
+                })
+        except Exception as e:
+            log.error("Erreur CNRS (%s) : %s", url, e)
+    log.info("  → %d offres trouvées", len(jobs))
+    return jobs
 
-        for item in soup.select(".offer-item, .job-item, article.offer"):
-            title_el = item.select_one("h2, h3, .offer-title")
-            link_el = item.select_one("a[href]")
-            if not title_el or not link_el:
-                continue
-            title = title_el.get_text(strip=True)
-            href = link_el["href"]
-            full_url = href if href.startswith("http") else "https://emploi.cnrs.fr" + href
-            location_el = item.select_one(".location, .lieu")
-            location = location_el.get_text(strip=True) if location_el else ""
-            desc_el = item.select_one(".description, .summary, p")
-            description = desc_el.get_text(strip=True) if desc_el else ""
 
-            jobs.append({
-                "id": make_id(full_url),
-                "title": title,
-                "source": "CNRS Emploi",
-                "url": full_url,
-                "description": description[:2000],
-                "location": location,
-                "score": score_job(title, description),
-                "created_at": datetime.utcnow().isoformat(),
-            })
-        log.info("  → %d offres trouvées", len(jobs))
-    except Exception as e:
-        log.error("Erreur CNRS : %s", e)
+def scrape_jobbnorge() -> list:
+    log.info("Jobbnorge (Norvège)")
+    jobs = []
+    headers = {"User-Agent": "Mozilla/5.0 AwaJobs/1.0"}
+    for term in ["psychology", "neuroscience", "postdoc"]:
+        try:
+            url = f"https://www.jobbnorge.no/search/en?term={term}&OrderBy=Published"
+            resp = requests.get(url, headers=headers, timeout=15)
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for item in soup.select("article, .job-item, li.vacancy"):
+                title_el = item.select_one("h2, h3, .title, a")
+                link_el = item.select_one("a[href]")
+                if not title_el or not link_el:
+                    continue
+                title = title_el.get_text(strip=True)
+                href = link_el["href"]
+                full_url = href if href.startswith("http") else "https://www.jobbnorge.no" + href
+                location_el = item.select_one(".location, .place, .city")
+                location = location_el.get_text(strip=True) if location_el else "Norway"
+                desc_el = item.select_one("p, .description, .summary")
+                description = desc_el.get_text(strip=True) if desc_el else ""
+                jobs.append({
+                    "id": make_id(full_url),
+                    "title": title,
+                    "source": "Jobbnorge",
+                    "url": full_url,
+                    "description": description[:2000],
+                    "location": location,
+                    "score": score_job(title, description + " europe"),
+                    "created_at": datetime.utcnow().isoformat(),
+                })
+        except Exception as e:
+            log.error("Erreur Jobbnorge (%s) : %s", term, e)
+    log.info("  → %d offres trouvées", len(jobs))
     return jobs
 
 
@@ -249,6 +292,7 @@ def run():
     for source in RSS_SOURCES:
         all_jobs.extend(scrape_rss(source))
     all_jobs.extend(scrape_cnrs())
+    all_jobs.extend(scrape_jobbnorge())
 
     # Nouvelles sources (jobs.ac.uk, HigherEdJobs)
     try:
