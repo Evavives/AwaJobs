@@ -56,6 +56,14 @@ SOURCES = [
         "url": "https://www.risc.cnrs.fr/rss",
         "type": "rss",
         "active": True,
+        "require_keywords": [
+            # FR
+            "poste", "postdoctorat", "chercheur", "ingénieur", "chargé",
+            "maître de conférences", "professeur", "recrutement",
+            # EN
+            "postdoc", "post-doc", "post doc", "researcher", "research fellow",
+            "lecturer", "position", "vacancy", "opening", "hiring",
+        ],
     },
     {
         "name": "ReliefWeb — Research Jobs",

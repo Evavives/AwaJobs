@@ -341,17 +341,24 @@ def run():
                     title = entry.get("title", "")
                     url = entry.get("link", "")
                     description = entry.get("summary", "")
-                    if title and url:
-                        all_jobs.append({
-                            "id": make_id(url),
-                            "title": title,
-                            "source": source["name"],
-                            "url": url,
-                            "description": description[:2000],
-                            "location": "",
-                            "score": score_job(title, description),
-                            "created_at": datetime.utcnow().isoformat(),
-                        })
+                    if not title or not url:
+                        continue
+                    # Filtre require_keywords : si défini, au moins un mot doit être dans le titre
+                    required = source.get("require_keywords")
+                    if required:
+                        title_lower = title.lower()
+                        if not any(kw.lower() in title_lower for kw in required):
+                            continue
+                    all_jobs.append({
+                        "id": make_id(url),
+                        "title": title,
+                        "source": source["name"],
+                        "url": url,
+                        "description": description[:2000],
+                        "location": "",
+                        "score": score_job(title, description),
+                        "created_at": datetime.utcnow().isoformat(),
+                    })
                 log.info("  → %d offres trouvées", len(feed.entries))
     except Exception as e:
         log.error("Erreur nouvelles sources : %s", e)
