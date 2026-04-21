@@ -47,21 +47,44 @@ async function sendJob() {
     formData.append("location", location);
     formData.append("source", getDomain(url));
 
-    const resp = await fetch(`${dashUrl}/api/clip`, {
-      method: "POST",
-      headers: { "X-Api-Key": apiKey },
-      body: formData,
-    });
+    const endpoint = `${dashUrl}/api/clip`;
+    let resp;
+    try {
+      resp = await fetch(endpoint, {
+        method: "POST",
+        headers: { "X-Api-Key": apiKey },
+        body: formData,
+      });
+    } catch (networkErr) {
+      alert("❌ Erreur réseau : " + networkErr.message + "\n\nEndpoint: " + endpoint);
+      showStatus("Erreur réseau — voir alerte", "error");
+      btn.disabled = false;
+      btn.textContent = "Envoyer vers AwaJobs";
+      return;
+    }
 
-    const data = await resp.json();
+    let data;
+    try {
+      data = await resp.json();
+    } catch (jsonErr) {
+      const text = await resp.text().catch(() => "(impossible de lire la réponse)");
+      alert("❌ Réponse HTTP " + resp.status + " (pas du JSON)\n\n" + text.slice(0, 300));
+      showStatus("Réponse inattendue (" + resp.status + ")", "error");
+      btn.disabled = false;
+      btn.textContent = "Envoyer vers AwaJobs";
+      return;
+    }
+
     if (data.ok) {
       showStatus("✓ Offre ajoutée au dashboard !", "success");
       setTimeout(() => window.close(), 1500);
     } else {
+      alert("❌ Erreur serveur : " + (data.error || JSON.stringify(data)));
       showStatus("Erreur : " + (data.error || resp.status), "error");
     }
   } catch (e) {
-    showStatus("Impossible de contacter le dashboard. Vérifie que tu es sur le bon réseau.", "error");
+    alert("❌ Erreur inattendue : " + e.message);
+    showStatus("Erreur inattendue.", "error");
   } finally {
     btn.disabled = false;
     btn.textContent = "Envoyer vers AwaJobs";
