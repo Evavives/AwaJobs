@@ -50,7 +50,13 @@ SOURCES = [
         "type": "rss",
         "active": True,
     },
-    # ── ONG / Institutions internationales ──────────────────────────────────
+    # ── France ──────────────────────────────────────────────────────────────
+    {
+        "name": "Les Échos du RISC (CNRS)",
+        "url": "https://www.risc.cnrs.fr/rss",
+        "type": "rss",
+        "active": True,
+    },
     {
         "name": "ReliefWeb — Research Jobs",
         "url": "https://reliefweb.int/jobs/rss.xml?search[field_career_categories]=20966",
