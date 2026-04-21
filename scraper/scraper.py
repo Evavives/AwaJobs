@@ -294,6 +294,13 @@ def run():
     all_jobs.extend(scrape_cnrs())
     all_jobs.extend(scrape_jobbnorge())
 
+    # Emails transférés (LinkedIn alerts, etc.)
+    try:
+        from scraper.email_scraper import scrape_emails
+        all_jobs.extend(scrape_emails(score_job))
+    except Exception as e:
+        log.error("Email scraper : %s", e)
+
     # Nouvelles sources (jobs.ac.uk, HigherEdJobs)
     try:
         from scraper.sources import SOURCES
