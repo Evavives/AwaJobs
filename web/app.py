@@ -4,35 +4,11 @@ AwaJobs - Dashboard web (Flask)
 
 import sqlite3
 import os
-from flask import Flask, render_template, request, jsonify, redirect, url_for, Response
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 from datetime import datetime
 
 app = Flask(__name__)
 DB_PATH = os.environ.get("DB_PATH", "/data/awajobs.db")
-
-
-def _check_auth(password: str) -> bool:
-    """Vérifie le mot de passe contre la variable d'env DASHBOARD_PASSWORD."""
-    expected = os.environ.get("DASHBOARD_PASSWORD", "")
-    if not expected:
-        return True  # pas de mot de passe configuré → accès libre (dev)
-    return password == expected
-
-
-@app.before_request
-def require_basic_auth():
-    """Protège toutes les routes par HTTP Basic Auth si DASHBOARD_PASSWORD est défini."""
-    expected = os.environ.get("DASHBOARD_PASSWORD", "")
-    if not expected:
-        return  # pas de protection active
-
-    auth = request.authorization
-    if not auth or not _check_auth(auth.password):
-        return Response(
-            "Accès refusé — identifiants incorrects.",
-            401,
-            {"WWW-Authenticate": 'Basic realm="AwaJobs"'},
-        )
 
 
 def get_db():
