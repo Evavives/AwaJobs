@@ -196,9 +196,41 @@ def run():
     total_new = 0
 
     all_jobs = []
+
+    # Sources originales (EURAXESS, Academic Jobs, CNRS)
     for source in RSS_SOURCES:
         all_jobs.extend(scrape_rss(source))
     all_jobs.extend(scrape_cnrs())
+
+    # Nouvelles sources (jobs.ac.uk, HigherEdJobs)
+    try:
+        from scraper.sources import SOURCES
+        from scraper.rss_scraper import scrape_rss as scrape_rss_new, score_job as score_new
+        for source in SOURCES:
+            if not source.get("active"):
+                continue
+            if source["type"] == "rss":
+                log.info("RSS : %s", source["name"])
+                import feedparser
+                feed = feedparser.parse(source["url"])
+                for entry in feed.entries:
+                    title = entry.get("title", "")
+                    url = entry.get("link", "")
+                    description = entry.get("summary", "")
+                    if title and url:
+                        all_jobs.append({
+                            "id": make_id(url),
+                            "title": title,
+                            "source": source["name"],
+                            "url": url,
+                            "description": description[:2000],
+                            "location": "",
+                            "score": score_job(title, description),
+                            "created_at": datetime.utcnow().isoformat(),
+                        })
+                log.info("  → %d offres trouvées", len(feed.entries))
+    except Exception as e:
+        log.error("Erreur nouvelles sources : %s", e)
 
     for job in all_jobs:
         if save_job(conn, job):

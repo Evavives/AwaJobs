@@ -48,6 +48,7 @@ def get_db():
 
 
 @app.route("/")
+@login_required
 def index():
     conn = get_db()
     label_filter = request.args.get("label", "all")
@@ -90,6 +91,7 @@ def index():
 
 
 @app.route("/label/<job_id>/<label>", methods=["POST"])
+@login_required
 def set_label(job_id, label):
     if label not in ("yes", "no", "maybe", "new"):
         return jsonify({"error": "invalid label"}), 400
@@ -101,6 +103,7 @@ def set_label(job_id, label):
 
 
 @app.route("/job/<job_id>")
+@login_required
 def job_detail(job_id):
     conn = get_db()
     job = conn.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
@@ -111,6 +114,7 @@ def job_detail(job_id):
 
 
 @app.route("/add", methods=["GET", "POST"])
+@login_required
 def add_manual():
     """Ajout manuel d'une offre (depuis LinkedIn, X, etc.)"""
     if request.method == "POST":
@@ -143,6 +147,7 @@ def add_manual():
 
 
 @app.route("/run-scraper", methods=["POST"])
+@login_required
 def run_scraper():
     """Lance le scraper manuellement depuis le dashboard"""
     try:
