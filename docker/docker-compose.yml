@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  awajobs:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: awajobs
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - awajobs_data:/data
+    environment:
+      - DB_PATH=/data/awajobs.db
+      - GMAIL_USER=awajobsradar@gmail.com
+      - GMAIL_PASS=${GMAIL_PASS}        # défini dans .env
+      - NOTIFY_EMAIL=awajobsradar@gmail.com
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  awajobs_data:
+    driver: local

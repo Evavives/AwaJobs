@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AwaJobs — Radar emploi</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f8f7f4; --surface: #ffffff; --border: #e5e3de;
+      --text: #1a1a18; --muted: #6b6966; --accent: #2563eb;
+      --green: #16a34a; --red: #dc2626; --amber: #d97706;
+      --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 10; }
+    .logo { font-weight: 600; font-size: 16px; letter-spacing: -0.02em; }
+    .logo span { color: var(--accent); }
+    .header-actions { display: flex; gap: 8px; }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; cursor: pointer; transition: background 0.15s; }
+    .btn:hover { background: var(--bg); }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: #1d4ed8; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 1.5rem 2rem; }
+
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; }
+    .stat-val { font-size: 26px; font-weight: 600; }
+    .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .filters { display: flex; gap: 10px; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; }
+    .filters select { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); font-size: 13px; color: var(--text); }
+    .filter-label { font-size: 13px; color: var(--muted); }
+
+    .tab-bar { display: flex; gap: 4px; margin-bottom: 1.25rem; }
+    .tab { padding: 6px 16px; border-radius: 20px; font-size: 13px; cursor: pointer; border: 1px solid transparent; color: var(--muted); background: none; }
+    .tab.active { background: var(--surface); border-color: var(--border); color: var(--text); font-weight: 500; }
+
+    .job-list { display: flex; flex-direction: column; gap: 10px; }
+    .job-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; display: flex; gap: 1rem; align-items: flex-start; transition: box-shadow 0.15s; }
+    .job-card:hover { box-shadow: var(--shadow); }
+    .job-card.label-yes { border-left: 3px solid var(--green); }
+    .job-card.label-no  { border-left: 3px solid var(--red); opacity: 0.6; }
+    .job-card.label-maybe { border-left: 3px solid var(--amber); }
+
+    .job-score { min-width: 40px; text-align: center; }
+    .score-badge { display: inline-block; width: 36px; height: 36px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); font-size: 13px; font-weight: 600; line-height: 36px; color: var(--text); }
+    .score-high { background: #dcfce7; border-color: #86efac; color: #15803d; }
+    .score-mid  { background: #fef9c3; border-color: #fde047; color: #854d0e; }
+
+    .job-body { flex: 1; min-width: 0; }
+    .job-title { font-weight: 500; font-size: 15px; margin-bottom: 3px; }
+    .job-meta  { font-size: 12px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+    .job-meta span::before { content: "·"; margin-right: 6px; }
+    .job-meta span:first-child::before { content: ""; margin: 0; }
+
+    .job-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .action-btn { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: none; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+    .action-btn.yes   { color: var(--green); }
+    .action-btn.no    { color: var(--red); }
+    .action-btn.maybe { color: var(--amber); }
+    .action-btn.yes:hover   { background: #dcfce7; border-color: #86efac; }
+    .action-btn.no:hover    { background: #fee2e2; border-color: #fca5a5; }
+    .action-btn.maybe:hover { background: #fef9c3; border-color: #fde047; }
+    .action-btn.active { font-weight: 600; }
+
+    .empty { text-align: center; padding: 3rem; color: var(--muted); }
+
+    #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1a1a18; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100; }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Awa<span>Jobs</span></div>
+  <div class="header-actions">
+    <a href="/add" class="btn">+ Ajouter manuellement</a>
+    <button class="btn btn-primary" onclick="runScraper()">Lancer la collecte</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-val">{{ stats.total }}</div>
+      <div class="stat-label">Offres totales</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" style="color:var(--accent)">{{ stats.new }}</div>
+      <div class="stat-label">Nouvelles</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" style="color:var(--green)">{{ stats.yes }}</div>
+      <div class="stat-label">Postulées</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" style="color:var(--red)">{{ stats.no }}</div>
+      <div class="stat-label">Rejetées</div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <span class="filter-label">Filtrer :</span>
+    <select onchange="applyFilter('source', this.value)">
+      <option value="all" {% if source_filter=='all' %}selected{% endif %}>Toutes les sources</option>
+      {% for s in sources %}
+      <option value="{{ s }}" {% if source_filter==s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    <select onchange="applyFilter('sort', this.value)">
+      <option value="score" {% if sort=='score' %}selected{% endif %}>Trier par score</option>
+      <option value="date"  {% if sort=='date'  %}selected{% endif %}>Trier par date</option>
+    </select>
+  </div>
+
+  <div class="tab-bar">
+    {% for tab, label in [('all','Toutes'), ('new','Nouvelles'), ('yes','Postulées'), ('maybe','À voir'), ('no','Rejetées')] %}
+    <button class="tab {% if label_filter==tab %}active{% endif %}"
+            onclick="applyFilter('label', '{{ tab }}')">{{ label }}</button>
+    {% endfor %}
+  </div>
+
+  <div class="job-list">
+    {% if jobs %}
+      {% for job in jobs %}
+      <div class="job-card label-{{ job.label }}" id="card-{{ job.id }}">
+
+        <div class="job-score">
+          <div class="score-badge {% if job.score >= 6 %}score-high{% elif job.score >= 3 %}score-mid{% endif %}">
+            {{ job.score }}
+          </div>
+        </div>
+
+        <div class="job-body">
+          <div class="job-title">
+            <a href="{{ job.url }}" target="_blank" rel="noopener">{{ job.title }}</a>
+          </div>
+          <div class="job-meta">
+            <span>{{ job.source }}</span>
+            {% if job.location %}<span>{{ job.location }}</span>{% endif %}
+            <span>{{ job.created_at[:10] }}</span>
+          </div>
+          {% if job.description %}
+          <div style="font-size:13px; color:var(--muted); margin-top:6px; line-height:1.5;">
+            {{ job.description[:200] }}{% if job.description|length > 200 %}…{% endif %}
+          </div>
+          {% endif %}
+          <div class="job-actions">
+            <button class="action-btn yes   {% if job.label=='yes'   %}active{% endif %}"
+                    onclick="label('{{ job.id }}', 'yes')">✓ Postulé</button>
+            <button class="action-btn maybe {% if job.label=='maybe' %}active{% endif %}"
+                    onclick="label('{{ job.id }}', 'maybe')">~ À voir</button>
+            <button class="action-btn no    {% if job.label=='no'    %}active{% endif %}"
+                    onclick="label('{{ job.id }}', 'no')">✗ Non</button>
+          </div>
+        </div>
+
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">Aucune offre trouvée — lance une collecte pour commencer !</div>
+    {% endif %}
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+function applyFilter(key, value) {
+  const params = new URLSearchParams(window.location.search);
+  params.set(key, value);
+  window.location.search = params.toString();
+}
+
+function label(jobId, lbl) {
+  fetch(`/label/${jobId}/${lbl}`, { method: 'POST' })
+    .then(r => r.json())
+    .then(() => {
+      const card = document.getElementById('card-' + jobId);
+      card.className = 'job-card label-' + lbl;
+      card.querySelectorAll('.action-btn').forEach(b => b.classList.remove('active'));
+      card.querySelector('.action-btn.' + lbl)?.classList.add('active');
+      toast('Label mis à jour');
+    });
+}
+
+function runScraper() {
+  toast('Collecte en cours…');
+  fetch('/run-scraper', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        toast(`${d.new} nouvelles offres ajoutées !`);
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        toast('Erreur : ' + d.error);
+      }
+    });
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
