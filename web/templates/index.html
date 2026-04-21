@@ -84,6 +84,7 @@
     <a href="/sources" class="btn">⚙ Sources</a>
     <button class="btn btn-primary" onclick="runScraper()">Lancer la collecte</button>
     <button class="btn" style="background:#7c3aed;color:white" onclick="trainModel()">🧠 Entraîner ML</button>
+    <button class="btn" style="background:#dc2626;color:white" onclick="purgeUsa()">🗑 Purger hors-Europe</button>
   </div>
 </header>
 
@@ -201,6 +202,20 @@ function runScraper() {
     .then(d => {
       if (d.ok) {
         toast(`${d.new} nouvelles offres ajoutées !`);
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        toast('Erreur : ' + d.error);
+      }
+    });
+}
+
+function purgeUsa() {
+  if (!confirm('Supprimer les offres hors-Europe labelisées "non" ? Les offres approuvées/maybe/applied sont conservées.')) return;
+  fetch('/purge-usa', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        toast(`🗑 ${d.deleted} offres supprimées`);
         setTimeout(() => location.reload(), 1500);
       } else {
         toast('Erreur : ' + d.error);

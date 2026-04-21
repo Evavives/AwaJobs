@@ -187,6 +187,39 @@ def api_clip():
     return resp
 
 
+@app.route("/purge-usa", methods=["POST"])
+@login_required
+def purge_usa():
+    """Supprime les offres non intéressantes hors-Europe (label no ou new)."""
+    geo_negative = [
+        "usa", "united states", "canada", "australia", "china", "japan",
+        "india", "brazil", "singapore", "hong kong", "new york", "california",
+        "boston", "chicago", "toronto", "sydney", "melbourne", "beijing",
+        "shanghai", "seoul", "tokyo",
+    ]
+    conn = get_db()
+    # Récupérer les offres supprimables (pas yes/maybe/applied)
+    rows = conn.execute(
+        "SELECT id, title, location, description FROM jobs WHERE label = 'no'"
+    ).fetchall()
+
+    to_delete = []
+    for row in rows:
+        text = ((row["location"] or "") + " " + (row["description"] or "") + " " + (row["title"] or "")).lower()
+        remote = any(r in text for r in ["remote", "hybrid", "télétravail", "à distance"])
+        if not remote and any(g in text for g in geo_negative):
+            to_delete.append(row["id"])
+
+    if to_delete:
+        conn.execute(
+            f"DELETE FROM jobs WHERE id IN ({','.join('?'*len(to_delete))})",
+            to_delete
+        )
+        conn.commit()
+    conn.close()
+    return jsonify({"ok": True, "deleted": len(to_delete)})
+
+
 @app.route("/run-scraper", methods=["POST"])
 @login_required
 def run_scraper():
