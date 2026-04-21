@@ -1,3 +1,7 @@
-// content.js — injecté sur toutes les pages
-// Pour l'instant rien d'automatique : l'utilisateur ouvre le popup manuellement.
-// Sprint 3 : détection automatique des offres LinkedIn.
+// Capture le texte sélectionné et le sauvegarde pour le popup
+document.addEventListener("mouseup", () => {
+  const selected = window.getSelection().toString().trim();
+  if (selected.length > 20) {
+    chrome.storage.local.set({ selectedText: selected });
+  }
+});

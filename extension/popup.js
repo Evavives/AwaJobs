@@ -5,10 +5,15 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   document.getElementById("title").value = tab.title || "";
 });
 
-// Charger les paramètres sauvegardés
-chrome.storage.local.get(["dashUrl", "apiKey"], (data) => {
+// Charger les paramètres sauvegardés + texte sélectionné sur la page
+chrome.storage.local.get(["dashUrl", "apiKey", "selectedText"], (data) => {
   if (data.dashUrl) document.getElementById("dashUrl").value = data.dashUrl;
   if (data.apiKey) document.getElementById("apiKey").value = data.apiKey;
+  if (data.selectedText) {
+    document.getElementById("description").value = data.selectedText;
+    // Nettoyer pour la prochaine fois
+    chrome.storage.local.remove("selectedText");
+  }
 });
 
 function saveSettings() {
