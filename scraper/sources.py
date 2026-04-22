@@ -77,6 +77,38 @@ SOURCES = [
         "type": "rss",
         "active": True,
     },
+    # ── Allemagne ────────────────────────────────────────────────────────────
+    {
+        "name": "Max Planck Society Jobs",
+        "url": "https://www.mpg.de/feeds/jobs.rss",
+        "type": "rss",
+        "active": True,
+    },
+    {
+        "name": "Forschung & Lehre (DE)",
+        "url": "https://www.forschung-und-lehre.de/rss/stellenmarkt.xml",
+        "type": "rss",
+        "active": True,
+    },
+    # ── UK — Neuroscience ─────────────────────────────────────────────────────
+    {
+        "name": "jobs.ac.uk — Neuroscience",
+        "url": "https://www.jobs.ac.uk/jobs/neuroscience/?format=rss",
+        "type": "rss",
+        "active": True,
+    },
+    # ── Fundings ─────────────────────────────────────────────────────────────
+    {
+        "name": "Funding — EURAXESS Grants",
+        "url": (
+            "https://euraxess.ec.europa.eu/funding/rss"
+            "?f[0]=funding_research_field:317"
+            "&f[1]=funding_research_field:322"
+        ),
+        "type": "rss",
+        "active": True,
+        "category": "funding",
+    },
     # ── Belgique / France (pas de RSS officiel — scraping désactivé pour l'instant) ──
     # FNRS, NWO, INSERM, JRC n'ont pas de flux RSS public fiable.
     # Ils seront ajoutés via scraping HTML en Sprint 3.

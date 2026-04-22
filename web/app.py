@@ -45,6 +45,12 @@ def logout():
 def get_db():
     conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
+    # Migration : ajouter category si elle n'existe pas (DB existante)
+    try:
+        conn.execute("ALTER TABLE jobs ADD COLUMN category TEXT DEFAULT 'job'")
+        conn.commit()
+    except Exception:
+        pass
     return conn
 
 
@@ -59,7 +65,9 @@ def index():
     query = "SELECT * FROM jobs WHERE 1=1"
     params = []
 
-    if label_filter != "all":
+    if label_filter == "funding":
+        query += " AND category = 'funding'"
+    elif label_filter != "all":
         query += " AND label = ?"
         params.append(label_filter)
     if source_filter != "all":
@@ -77,6 +85,7 @@ def index():
         "total": conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0],
         "new": conn.execute("SELECT COUNT(*) FROM jobs WHERE label='new'").fetchone()[0],
         "yes": conn.execute("SELECT COUNT(*) FROM jobs WHERE label='yes'").fetchone()[0],
+        "top": conn.execute("SELECT COUNT(*) FROM jobs WHERE label='top'").fetchone()[0],
         "no": conn.execute("SELECT COUNT(*) FROM jobs WHERE label='no'").fetchone()[0],
     }
 
@@ -94,7 +103,7 @@ def index():
 @app.route("/label/<job_id>/<label>", methods=["POST"])
 @login_required
 def set_label(job_id, label):
-    if label not in ("yes", "no", "maybe", "new", "applied"):
+    if label not in ("yes", "no", "maybe", "new", "applied", "top"):
         return jsonify({"error": "invalid label"}), 400
     conn = get_db()
     conn.execute("UPDATE jobs SET label=? WHERE id=?", (label, job_id))

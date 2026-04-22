@@ -66,6 +66,12 @@ KEYWORDS_POSITIVE = [
     "jugement moral", "process dissociation", "dual process",
     "political psychology", "psychologie politique",
     "cross-cultural psychology", "psychologie interculturelle",
+    # Fundings
+    "fellowship", "grant", "funding", "financement", "bourse",
+    "marie curie", "msca", "erc starting", "erc consolidator",
+    "veni", "vidi", "vici", "hfsp", "humboldt", "fyssen",
+    "fnrs", "fwo", "anr jcjc", "ramon y cajal", "ikerbasque",
+    "wellcome", "postdoctoral fellowship", "research grant",
 ]
 
 KEYWORDS_NEGATIVE = [
@@ -129,6 +135,25 @@ GEO_NEGATIVE = [
 ]
 
 
+FUNDING_KEYWORDS = [
+    "fellowship", "grant", "funding", "financement", "bourse",
+    "marie curie", "msca", "erc starting", "erc consolidator", "erc synergy",
+    "veni", "vidi", "vici", "hfsp", "humboldt fellowship", "fyssen",
+    "fnrs", "fwo postdoc", "anr jcjc", "ramon y cajal", "ikerbasque",
+    "wellcome award", "postdoctoral fellowship", "research grant",
+    "prix de thèse", "appel à projets", "call for proposals",
+    "bourse postdoctorale", "allocation de recherche",
+]
+
+
+def detect_category(title: str, description: str) -> str:
+    """Retourne 'funding' si l'offre ressemble à un financement, sinon 'job'."""
+    text = (title + " " + description).lower()
+    if any(kw in text for kw in FUNDING_KEYWORDS):
+        return "funding"
+    return "job"
+
+
 def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH, timeout=30)
@@ -142,10 +167,16 @@ def init_db():
             location    TEXT,
             score       INTEGER DEFAULT 0,
             label       TEXT DEFAULT 'new',
+            category    TEXT DEFAULT 'job',
             created_at  TEXT NOT NULL,
             seen        INTEGER DEFAULT 0
         )
     """)
+    # Migration : ajouter category si elle n'existe pas
+    try:
+        conn.execute("ALTER TABLE jobs ADD COLUMN category TEXT DEFAULT 'job'")
+    except Exception:
+        pass
     conn.execute("""
         CREATE TABLE IF NOT EXISTS scrape_log (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -250,10 +281,11 @@ def save_job(conn, job: dict):
     ).fetchone()
     if existing:
         return False
+    category = detect_category(job.get("title", ""), job.get("description", "") or "")
     conn.execute(
-        """INSERT INTO jobs (id, title, source, url, description, location, score, label, created_at)
-           VALUES (:id, :title, :source, :url, :description, :location, :score, 'new', :created_at)""",
-        job,
+        """INSERT INTO jobs (id, title, source, url, description, location, score, label, category, created_at)
+           VALUES (:id, :title, :source, :url, :description, :location, :score, 'new', :category, :created_at)""",
+        {**job, "category": category},
     )
     return True
 
