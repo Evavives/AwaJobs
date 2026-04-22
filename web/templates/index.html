@@ -168,7 +168,7 @@
             <button class="action-btn no    {% if job.label=='no'    %}active{% endif %}"
                     onclick="label('{{ job.id }}', 'no')">✗ Non</button>
             <button class="action-btn funding {% if job.category=='funding' %}active{% endif %}"
-                    onclick="markFunding('{{ job.id }}', this)">&#128188; Funding</button>
+                    onclick="markFunding('{{ job.id }}', this)">&#128176; Funding</button>
           </div>
         </div>
 
@@ -208,8 +208,8 @@ function markFunding(jobId, btn) {
   fetch(`/category/${jobId}/${newCat}`, { method: 'POST' })
     .then(r => r.json())
     .then(() => {
-      btn.classList.toggle('active', !isActive);
-      toast(isActive ? 'Retiré des fundings' : 'Marqué comme funding');
+      toast(isActive ? 'Retiré des fundings' : 'Marqué comme funding — redirection...');
+      setTimeout(() => location.reload(), 800);
     });
 }
 
