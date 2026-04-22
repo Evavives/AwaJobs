@@ -299,7 +299,7 @@ def scrape_inserm() -> list:
             jobs.append({
                 "id": make_id(full_url),
                 "title": title,
-                "source": "INSERM",
+                "source": "INSERM — Softy",
                 "url": full_url,
                 "description": description[:2000],
                 "location": location,
@@ -332,7 +332,7 @@ def scrape_jrc() -> list:
             jobs.append({
                 "id": make_id(full_url),
                 "title": title,
-                "source": "JRC (EU Commission)",
+                "source": "JRC — EU Jobs",
                 "url": full_url,
                 "description": description[:2000],
                 "location": "Europe",
@@ -404,7 +404,7 @@ def scrape_cnrs() -> list:
                 jobs.append({
                     "id": make_id(full_url),
                     "title": title,
-                    "source": "CNRS Emploi",
+                    "source": "CNRS — Emploi-ESR",
                     "url": full_url,
                     "description": description[:2000],
                     "location": location,
@@ -441,7 +441,7 @@ def scrape_jobbnorge() -> list:
                 jobs.append({
                     "id": make_id(full_url),
                     "title": title,
-                    "source": "Jobbnorge",
+                    "source": "Jobbnorge (NO)",
                     "url": full_url,
                     "description": description[:2000],
                     "location": location,

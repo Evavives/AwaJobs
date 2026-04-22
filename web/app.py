@@ -54,6 +54,7 @@ def get_db():
             deleted    INTEGER NOT NULL,
             type       TEXT NOT NULL
         )""",
+        "UPDATE jobs SET source = 'LinkedIn (email)' WHERE source LIKE 'Email (%'",  # ← ajoute cette ligne
     ]:
         try:
             conn.execute(sql)
@@ -148,14 +149,17 @@ def add_manual():
         job_id = hashlib.md5(url.encode()).hexdigest()
         score = score_job(title, description)
 
+        from scraper.scraper import detect_category
+        category = detect_category(title, description)
+
         conn = get_db()
         try:
             conn.execute(
                 """INSERT OR IGNORE INTO jobs
-                   (id, title, source, url, description, location, score, label, created_at)
-                   VALUES (?,?,?,?,?,?,?,'new',?)""",
+                   (id, title, source, url, description, location, score, label, category, created_at)
+                   VALUES (?,?,?,?,?,?,?,'new',?,?)""",
                 (job_id, title, source, url, description[:2000], location, score,
-                 datetime.utcnow().isoformat())
+                 category, datetime.utcnow().isoformat())
             )
             conn.commit()
         finally:
@@ -189,14 +193,17 @@ def api_clip():
     job_id = hashlib.md5(url.encode()).hexdigest()
     score = score_job(title, description)
 
+    from scraper.scraper import detect_category
+    category = detect_category(title, description)
+
     conn = get_db()
     try:
         conn.execute(
             """INSERT OR IGNORE INTO jobs
-               (id, title, source, url, description, location, score, label, created_at)
-               VALUES (?,?,?,?,?,?,?,'new',?)""",
+               (id, title, source, url, description, location, score, label, category, created_at)
+               VALUES (?,?,?,?,?,?,?,'new',?,?)""",
             (job_id, title, source, url, description[:2000], location, score,
-             datetime.utcnow().isoformat())
+             category, datetime.utcnow().isoformat())
         )
         conn.commit()
     finally:
