@@ -468,34 +468,18 @@ def run():
 
     all_jobs = []
 
-    # Sources originales (EURAXESS, Academic Jobs, CNRS)
-    for source in RSS_SOURCES:
-        all_jobs.extend(scrape_rss(source))
-    if _is_active(conn, "CNRS — Emploi-ESR"):
-        all_jobs.extend(scrape_cnrs())
-    if _is_active(conn, "Jobbnorge (NO)"):
-        all_jobs.extend(scrape_jobbnorge())
-    if _is_active(conn, "INSERM — Softy"):
-        all_jobs.extend(scrape_inserm())
-    if _is_active(conn, "JRC — EU Jobs"):
-        all_jobs.extend(scrape_jrc())
-    # Emails transférés (LinkedIn alerts, etc.)
+    # Toutes les sources RSS — vérification du statut actif en DB
     try:
-        from scraper.email_scraper import scrape_emails
-        all_jobs.extend(scrape_emails(score_job))
-    except Exception as e:
-        log.error("Email scraper : %s", e)
-
-    # Nouvelles sources (jobs.ac.uk, HigherEdJobs)
-    try:
+        import feedparser
         from scraper.sources import SOURCES
-        from scraper.rss_scraper import scrape_rss as scrape_rss_new, score_job as score_new
         for source in SOURCES:
-            if not source.get("active"):
+            if source["type"] != "rss":
                 continue
-            if source["type"] == "rss":
-                log.info("RSS : %s", source["name"])
-                import feedparser
+            if not _is_active(conn, source["name"]):
+                log.info("Source muette, ignorée : %s", source["name"])
+                continue
+            log.info("RSS : %s", source["name"])
+            try:
                 feed = feedparser.parse(source["url"])
                 for entry in feed.entries:
                     title = entry.get("title", "")
@@ -503,12 +487,9 @@ def run():
                     description = entry.get("summary", "")
                     if not title or not url:
                         continue
-                    # Filtre require_keywords : si défini, au moins un mot doit être dans le titre
                     required = source.get("require_keywords")
-                    if required:
-                        title_lower = title.lower()
-                        if not any(kw.lower() in title_lower for kw in required):
-                            continue
+                    if required and not any(kw.lower() in title.lower() for kw in required):
+                        continue
                     all_jobs.append({
                         "id": make_id(url),
                         "title": title,
@@ -519,9 +500,28 @@ def run():
                         "score": score_job(title, description),
                         "created_at": datetime.utcnow().isoformat(),
                     })
-                log.info("  → %d offres trouvées", len(feed.entries))
+                log.info("  → %d offres", len(feed.entries))
+            except Exception as e:
+                log.error("Erreur RSS %s : %s", source["name"], e)
     except Exception as e:
-        log.error("Erreur nouvelles sources : %s", e)
+        log.error("Erreur chargement sources : %s", e)
+
+    # Sources HTML (scraping dédié) — vérification DB
+    if _is_active(conn, "CNRS — Emploi-ESR"):
+        all_jobs.extend(scrape_cnrs())
+    if _is_active(conn, "Jobbnorge (NO)"):
+        all_jobs.extend(scrape_jobbnorge())
+    if _is_active(conn, "INSERM — Softy"):
+        all_jobs.extend(scrape_inserm())
+    if _is_active(conn, "JRC — EU Jobs"):
+        all_jobs.extend(scrape_jrc())
+
+    # Emails transférés (LinkedIn alerts, etc.)
+    try:
+        from scraper.email_scraper import scrape_emails
+        all_jobs.extend(scrape_emails(score_job))
+    except Exception as e:
+        log.error("Email scraper : %s", e)
 
     for job in all_jobs:
         if save_job(conn, job):

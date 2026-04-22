@@ -1,4 +1,33 @@
 SOURCES = [
+    # ── Europe / International ───────────────────────────────────────────────
+    {
+        "name": "EURAXESS — Psychology & Neuroscience",
+        "url": (
+            "https://euraxess.ec.europa.eu/jobs/rss"
+            "?f[0]=job_research_field:317"
+            "&f[1]=job_research_field:322"
+            "&f[2]=job_research_field:323"
+            "&f[3]=job_research_field:324"
+            "&f[4]=job_research_field:374"
+            "&f[5]=job_research_field:378"
+            "&f[6]=job_research_field:379"
+            "&f[7]=offer_type:job_offer"
+        ),
+        "type": "rss",
+        "active": True,
+    },
+    {
+        "name": "Academic Jobs Online — Psychology",
+        "url": "https://academicjobsonline.org/ajo/rss/feed?field=psychology",
+        "type": "rss",
+        "active": True,
+    },
+    {
+        "name": "Academic Jobs Online — Neuroscience",
+        "url": "https://academicjobsonline.org/ajo/rss/feed?field=neuroscience",
+        "type": "rss",
+        "active": True,
+    },
     # ── UK ──────────────────────────────────────────────────────────────────
     {
         "name": "jobs.ac.uk — Psychology",
