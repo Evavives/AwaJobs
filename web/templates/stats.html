@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AwaJobs â€” Statistiques</title>
+  <title>AwaJobs &ndash; Statistiques</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -20,15 +20,12 @@
     .btn { display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; cursor: pointer; text-decoration: none; }
     .btn:hover { background: var(--bg); }
     .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
-
     .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 2rem; }
     .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; }
     .kpi .val { font-size: 36px; font-weight: 700; line-height: 1.1; }
     .kpi .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; }
-
     h2 { font-size: 16px; font-weight: 600; margin-bottom: 1rem; }
     .section { margin-bottom: 2.5rem; }
-
     .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
     table { width: 100%; border-collapse: collapse; }
     th { background: var(--bg); padding: 9px 14px; font-size: 12px; color: var(--muted); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; white-space: nowrap; }
@@ -41,9 +38,7 @@
     tr:hover td { background: var(--bg); }
     .bar-wrap { background: #f1f0ed; border-radius: 4px; height: 7px; min-width: 80px; }
     .bar { background: var(--green); border-radius: 4px; height: 7px; }
-
     .chart-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
-
     #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1a1a18; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; opacity: 0; transition: all 0.2s; pointer-events: none; z-index: 999; }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
@@ -51,11 +46,9 @@
 <body>
 <header>
   <div class="logo">Awa<span>Jobs</span></div>
-  <a href="/" class="btn">â† Dashboard</a>
+  <a href="/" class="btn">&larr; Dashboard</a>
 </header>
-
 <div class="container">
-
   <div class="kpi-row">
     <div class="kpi">
       <div class="val">{{ total_jobs }}</div>
@@ -63,31 +56,29 @@
     </div>
     <div class="kpi">
       <div class="val" style="color:var(--green)">{{ total_approved }}</div>
-      <div class="lbl">ApprouvÃ©es (â­ Top + âœ“)</div>
+      <div class="lbl">Approuv&eacute;es (&#11088; Top + &#10003;)</div>
     </div>
     <div class="kpi">
       <div class="val" style="color:var(--red)">{{ total_purged }}</div>
-      <div class="lbl">Offres purgÃ©es (total)</div>
+      <div class="lbl">Offres purg&eacute;es (total)</div>
     </div>
   </div>
-
   {% if approved_by_source %}
   <div class="section">
-    <h2>ApprouvÃ©es par source</h2>
+    <h2>Approuv&eacute;es par source</h2>
     <div class="chart-box">
       <canvas id="chart" height="110"></canvas>
     </div>
   </div>
-
   <div class="section">
     <div class="table-wrap">
       <table id="tbl">
         <thead>
           <tr>
-            <th onclick="sortTable(0)" data-col="0">Source <span class="arrow">â†•</span></th>
-            <th onclick="sortTable(1)" data-col="1" class="sorted">ApprouvÃ©es <span class="arrow">â†“</span></th>
-            <th onclick="sortTable(2)" data-col="2">Total scrapÃ©es <span class="arrow">â†•</span></th>
-            <th onclick="sortTable(3)" data-col="3">% <span class="arrow">â†•</span></th>
+            <th onclick="sortTable(0)" data-col="0">Source <span class="arrow">&#8597;</span></th>
+            <th onclick="sortTable(1)" data-col="1" class="sorted">Approuv&eacute;es <span class="arrow">&#8595;</span></th>
+            <th onclick="sortTable(2)" data-col="2">Total scrap&eacute;es <span class="arrow">&#8597;</span></th>
+            <th onclick="sortTable(3)" data-col="3">% <span class="arrow">&#8597;</span></th>
             <th></th>
           </tr>
         </thead>
@@ -106,26 +97,22 @@
     </div>
   </div>
   {% else %}
-  <p style="color:var(--muted); font-size:13px; margin-bottom:2rem;">Aucune offre approuvÃ©e pour l'instant.</p>
+  <p style="color:var(--muted); font-size:13px; margin-bottom:2rem;">Aucune offre approuv&eacute;e pour l'instant.</p>
   {% endif %}
-
 </div>
-
 <div id="toast"></div>
-
 <script>
 const labels = {{ approved_by_source | map(attribute='source') | list | tojson }};
 const dataApproved = {{ approved_by_source | map(attribute='approved') | list | tojson }};
 const dataTotal = {{ approved_by_source | map(attribute='total') | list | tojson }};
-
 if (labels.length) {
   new Chart(document.getElementById('chart'), {
     type: 'bar',
     data: {
       labels,
       datasets: [
-        { label: 'ApprouvÃ©es', data: dataApproved, backgroundColor: '#16a34a', borderRadius: 4 },
-        { label: 'Total scrapÃ©es', data: dataTotal, backgroundColor: '#e5e3de', borderRadius: 4 }
+        { label: 'Approuv\u00e9es', data: dataApproved, backgroundColor: '#16a34a', borderRadius: 4 },
+        { label: 'Total scrap\u00e9es', data: dataTotal, backgroundColor: '#e5e3de', borderRadius: 4 }
       ]
     },
     options: {
@@ -138,7 +125,6 @@ if (labels.length) {
     }
   });
 }
-
 let sortDir = [1, -1, 1, 1];
 function sortTable(col) {
   const tbody = document.querySelector('#tbl tbody');
@@ -156,10 +142,9 @@ function sortTable(col) {
   document.querySelectorAll('th').forEach((th, i) => {
     th.classList.toggle('sorted', i === col);
     const a = th.querySelector('.arrow');
-    if (a) a.textContent = i === col ? (sortDir[col] === 1 ? 'â†‘' : 'â†“') : 'â†•';
+    if (a) a.textContent = i === col ? (sortDir[col] === 1 ? '\u2191' : '\u2193') : '\u2195';
   });
 }
-
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
