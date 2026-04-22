@@ -188,6 +188,67 @@ def api_clip():
     return resp
 
 
+@app.route("/stats")
+@login_required
+def stats_page():
+    conn = get_db()
+
+    # Offres rejetées par source
+    rejected_by_source = conn.execute("""
+        SELECT source, COUNT(*) as cnt
+        FROM jobs WHERE label='no'
+        GROUP BY source ORDER BY cnt DESC
+    """).fetchall()
+
+    # Offres approuvées (yes/maybe/applied) — top 10 par score
+    approved = conn.execute("""
+        SELECT title, source, location, score, url, label
+        FROM jobs WHERE label IN ('yes','maybe','applied')
+        ORDER BY score DESC LIMIT 20
+    """).fetchall()
+
+    # Mots-clés les plus fréquents dans les offres approuvées
+    approved_titles = conn.execute(
+        "SELECT title, description FROM jobs WHERE label IN ('yes','maybe','applied')"
+    ).fetchall()
+
+    # Stats ML
+    ml_stats = conn.execute("""
+        SELECT label, COUNT(*) as cnt FROM jobs
+        WHERE label NOT IN ('new')
+        GROUP BY label
+    """).fetchall()
+
+    total_labeled = sum(r['cnt'] for r in ml_stats)
+    total_positive = sum(r['cnt'] for r in ml_stats if r['label'] in ('yes','maybe','applied'))
+    total_negative = sum(r['cnt'] for r in ml_stats if r['label'] == 'no')
+
+    import os
+    model_exists = os.path.exists(os.environ.get("MODEL_PATH", "/data/awajobs_model.pkl"))
+
+    conn.close()
+    return render_template("stats.html",
+        rejected_by_source=rejected_by_source,
+        approved=approved,
+        ml_stats=ml_stats,
+        total_labeled=total_labeled,
+        total_positive=total_positive,
+        total_negative=total_negative,
+        model_exists=model_exists,
+    )
+
+
+@app.route("/purge-all-no", methods=["POST"])
+@login_required
+def purge_all_no():
+    """Supprime TOUTES les offres labelées 'no'."""
+    conn = get_db()
+    deleted = conn.execute("DELETE FROM jobs WHERE label='no'").rowcount
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True, "deleted": deleted})
+
+
 @app.route("/purge-usa", methods=["POST"])
 @login_required
 def purge_usa():

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AwaJobs — Statistiques</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f8f7f4; --surface: #ffffff; --border: #e5e3de;
+      --text: #1a1a18; --muted: #6b6966; --accent: #2563eb;
+      --green: #16a34a; --red: #dc2626; --purple: #7c3aed;
+      --radius: 10px;
+    }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; }
+    a { color: var(--accent); text-decoration: none; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+    .logo { font-weight: 600; font-size: 16px; }
+    .logo span { color: var(--accent); }
+    .btn { display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; cursor: pointer; }
+    .btn:hover { background: var(--bg); }
+    .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+    h2 { font-size: 18px; font-weight: 600; margin-bottom: 1rem; margin-top: 2rem; }
+    h2:first-of-type { margin-top: 0; }
+
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+    .card .val { font-size: 32px; font-weight: 700; }
+    .card .lbl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+    th { background: var(--bg); text-align: left; padding: 10px 14px; font-size: 12px; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--border); }
+    td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    tr:last-child td { border-bottom: none; }
+    .bar-wrap { background: var(--bg); border-radius: 4px; height: 8px; min-width: 100px; }
+    .bar { background: var(--red); border-radius: 4px; height: 8px; }
+    .bar.green { background: var(--green); }
+
+    .approved-list { display: flex; flex-direction: column; gap: 8px; }
+    .approved-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; display: flex; justify-content: space-between; align-items: start; }
+    .approved-title { font-weight: 500; font-size: 14px; }
+    .approved-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .score-badge { background: var(--green); color: white; border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 600; white-space: nowrap; margin-left: 12px; }
+    .label-badge { border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 500; }
+    .label-yes { background: #dcfce7; color: var(--green); }
+    .label-maybe { background: #fef3c7; color: #d97706; }
+    .label-applied { background: #ede9fe; color: var(--purple); }
+
+    .ml-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; }
+    .ml-status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 4px 12px; border-radius: 20px; font-weight: 500; }
+    .ml-ok { background: #dcfce7; color: var(--green); }
+    .ml-no { background: #fef3c7; color: #d97706; }
+    .progress { background: var(--bg); border-radius: 8px; height: 12px; margin-top: 8px; }
+    .progress-bar { background: var(--green); border-radius: 8px; height: 12px; transition: width 0.5s; }
+
+    .purge-section { margin-top: 2rem; padding: 1.25rem; background: #fff5f5; border: 1px solid #fecaca; border-radius: var(--radius); }
+    #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1a1a18; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; opacity: 0; transition: all 0.2s; pointer-events: none; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">Awa<span>Jobs</span></div>
+  <a href="/" class="btn">← Retour au dashboard</a>
+</header>
+
+<div class="container">
+
+  <!-- ML Stats -->
+  <h2>🧠 Modèle ML</h2>
+  <div class="ml-box">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:1rem;">
+      {% if model_exists %}
+        <span class="ml-status ml-ok">✓ Modèle entraîné</span>
+      {% else %}
+        <span class="ml-status ml-no">⚠ Modèle non encore entraîné</span>
+      {% endif %}
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+      <div>
+        <div style="font-size:28px; font-weight:700; color:var(--green)">{{ total_positive }}</div>
+        <div style="font-size:12px; color:var(--muted)">Positives (yes/maybe/applied)</div>
+      </div>
+      <div>
+        <div style="font-size:28px; font-weight:700; color:var(--red)">{{ total_negative }}</div>
+        <div style="font-size:12px; color:var(--muted)">Négatives (no)</div>
+      </div>
+      <div>
+        <div style="font-size:28px; font-weight:700;">{{ total_labeled }}</div>
+        <div style="font-size:12px; color:var(--muted)">Total labelisées</div>
+      </div>
+    </div>
+    {% set pct = (total_positive / 10 * 100)|int if total_positive < 10 else 100 %}
+    {% if total_positive < 10 %}
+    <div style="margin-top:1rem; font-size:13px; color:var(--muted)">
+      Il faut au moins 10 offres positives pour entraîner le modèle ({{ total_positive }}/10)
+    </div>
+    <div class="progress"><div class="progress-bar" style="width:{{ pct }}%"></div></div>
+    {% endif %}
+    {% if total_positive >= 10 %}
+    <div style="margin-top:1rem;">
+      <button class="btn" style="background:var(--purple);color:white;border:none;" onclick="trainModel()">🧠 Ré-entraîner le modèle</button>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Offres rejetées par source -->
+  <h2>❌ Offres rejetées par source</h2>
+  <table>
+    <thead><tr><th>Source</th><th>Nb rejetées</th><th>Proportion</th></tr></thead>
+    <tbody>
+      {% set max_rejected = rejected_by_source[0].cnt if rejected_by_source else 1 %}
+      {% for row in rejected_by_source %}
+      <tr>
+        <td>{{ row.source }}</td>
+        <td><strong>{{ row.cnt }}</strong></td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar" style="width:{{ (row.cnt / max_rejected * 100)|int }}%"></div>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Offres approuvées -->
+  <h2>✅ Offres les mieux scorées (approuvées)</h2>
+  <div class="approved-list">
+    {% for job in approved %}
+    <div class="approved-item">
+      <div>
+        <a href="{{ job.url }}" target="_blank" class="approved-title">{{ job.title }}</a>
+        <div class="approved-meta">{{ job.source }}{% if job.location %} · {{ job.location }}{% endif %}</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+        <span class="label-badge label-{{ job.label }}">{{ job.label }}</span>
+        <span class="score-badge">{{ job.score }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Purge -->
+  <div class="purge-section">
+    <div style="font-weight:600; margin-bottom:6px;">🗑 Purge des offres rejetées</div>
+    <div style="font-size:13px; color:#7f1d1d; margin-bottom:12px;">
+      Supprime <strong>toutes</strong> les offres labelisées "non" ({{ total_negative }} offres). 
+      Les offres yes/maybe/applied sont conservées.
+    </div>
+    <button class="btn" style="background:var(--red);color:white;border:none;" onclick="purgeAll()">
+      Supprimer les {{ total_negative }} offres "non"
+    </button>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function purgeAll() {
+  if (!confirm('Supprimer TOUTES les {{ total_negative }} offres "non" ? Cette action est irréversible.')) return;
+  fetch('/purge-all-no', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        toast(`🗑 ${d.deleted} offres supprimées`);
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        toast('Erreur : ' + d.error);
+      }
+    });
+}
+
+function trainModel() {
+  toast('Entraînement en cours…');
+  fetch('/train-model', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      toast(d.ok ? '🧠 Modèle entraîné !' : 'Erreur : ' + d.error);
+      if (d.ok) setTimeout(() => location.reload(), 1500);
+    });
+}
+</script>
+</body>
+</html>
