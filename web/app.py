@@ -45,12 +45,21 @@ def logout():
 def get_db():
     conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
-    # Migration : ajouter category si elle n'existe pas (DB existante)
-    try:
-        conn.execute("ALTER TABLE jobs ADD COLUMN category TEXT DEFAULT 'job'")
-        conn.commit()
-    except Exception:
-        pass
+    # Migrations
+    for sql in [
+        "ALTER TABLE jobs ADD COLUMN category TEXT DEFAULT 'job'",
+        """CREATE TABLE IF NOT EXISTS purge_log (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            purged_at  TEXT NOT NULL,
+            deleted    INTEGER NOT NULL,
+            type       TEXT NOT NULL
+        )""",
+    ]:
+        try:
+            conn.execute(sql)
+            conn.commit()
+        except Exception:
+            pass
     return conn
 
 
@@ -202,48 +211,29 @@ def api_clip():
 def stats_page():
     conn = get_db()
 
-    # Offres rejetées par source
-    rejected_by_source = conn.execute("""
-        SELECT source, COUNT(*) as cnt
-        FROM jobs WHERE label='no'
-        GROUP BY source ORDER BY cnt DESC
+    total_jobs = conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]
+    total_approved = conn.execute("SELECT COUNT(*) FROM jobs WHERE label IN ('yes','top')").fetchone()[0]
+    total_purged = conn.execute("SELECT COALESCE(SUM(deleted),0) FROM purge_log").fetchone()[0]
+
+    # Approuvées par source : nb approuvées, total, %
+    approved_by_source = conn.execute("""
+        SELECT
+            source,
+            SUM(CASE WHEN label IN ('yes','top') THEN 1 ELSE 0 END) AS approved,
+            COUNT(*) AS total,
+            ROUND(100.0 * SUM(CASE WHEN label IN ('yes','top') THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct
+        FROM jobs
+        GROUP BY source
+        HAVING approved > 0
+        ORDER BY approved DESC
     """).fetchall()
-
-    # Offres approuvées (yes/maybe/applied) — top 10 par score
-    approved = conn.execute("""
-        SELECT title, source, location, score, url, label
-        FROM jobs WHERE label IN ('yes','maybe','applied')
-        ORDER BY score DESC LIMIT 20
-    """).fetchall()
-
-    # Mots-clés les plus fréquents dans les offres approuvées
-    approved_titles = conn.execute(
-        "SELECT title, description FROM jobs WHERE label IN ('yes','maybe','applied')"
-    ).fetchall()
-
-    # Stats ML
-    ml_stats = conn.execute("""
-        SELECT label, COUNT(*) as cnt FROM jobs
-        WHERE label NOT IN ('new')
-        GROUP BY label
-    """).fetchall()
-
-    total_labeled = sum(r['cnt'] for r in ml_stats)
-    total_positive = sum(r['cnt'] for r in ml_stats if r['label'] in ('yes','maybe','applied'))
-    total_negative = sum(r['cnt'] for r in ml_stats if r['label'] == 'no')
-
-    import os
-    model_exists = os.path.exists(os.environ.get("MODEL_PATH", "/data/awajobs_model.pkl"))
 
     conn.close()
     return render_template("stats.html",
-        rejected_by_source=rejected_by_source,
-        approved=approved,
-        ml_stats=ml_stats,
-        total_labeled=total_labeled,
-        total_positive=total_positive,
-        total_negative=total_negative,
-        model_exists=model_exists,
+        total_jobs=total_jobs,
+        total_approved=total_approved,
+        total_purged=total_purged,
+        approved_by_source=approved_by_source,
     )
 
 
@@ -253,6 +243,10 @@ def purge_all_no():
     """Supprime TOUTES les offres labelées 'no'."""
     conn = get_db()
     deleted = conn.execute("DELETE FROM jobs WHERE label='no'").rowcount
+    conn.execute(
+        "INSERT INTO purge_log (purged_at, deleted, type) VALUES (?,?,?)",
+        (datetime.utcnow().isoformat(), deleted, "all-no")
+    )
     conn.commit()
     conn.close()
     return jsonify({"ok": True, "deleted": deleted})
@@ -285,6 +279,10 @@ def purge_usa():
         conn.execute(
             f"DELETE FROM jobs WHERE id IN ({','.join('?'*len(to_delete))})",
             to_delete
+        )
+        conn.execute(
+            "INSERT INTO purge_log (purged_at, deleted, type) VALUES (?,?,?)",
+            (datetime.utcnow().isoformat(), len(to_delete), "hors-europe")
         )
         conn.commit()
     conn.close()

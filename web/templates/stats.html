@@ -4,7 +4,172 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AwaJobs — Statistiques</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f8f7f4; --surface: #ffffff; --border: #e5e3de;
+      --text: #1a1a18; --muted: #6b6966; --accent: #2563eb;
+      --green: #16a34a; --red: #dc2626; --radius: 10px;
+    }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; }
+    a { color: var(--accent); text-decoration: none; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+    .logo { font-weight: 600; font-size: 16px; }
+    .logo span { color: var(--accent); }
+    .btn { display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; cursor: pointer; text-decoration: none; }
+    .btn:hover { background: var(--bg); }
+    .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 2rem; }
+    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; }
+    .kpi .val { font-size: 36px; font-weight: 700; line-height: 1.1; }
+    .kpi .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    h2 { font-size: 16px; font-weight: 600; margin-bottom: 1rem; }
+    .section { margin-bottom: 2.5rem; }
+
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: var(--bg); padding: 9px 14px; font-size: 12px; color: var(--muted); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; white-space: nowrap; }
+    th:hover { color: var(--text); }
+    th.sorted { color: var(--accent); }
+    th .arrow { margin-left: 4px; opacity: 0.5; }
+    th.sorted .arrow { opacity: 1; }
+    td { padding: 9px 14px; font-size: 13px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg); }
+    .bar-wrap { background: #f1f0ed; border-radius: 4px; height: 7px; min-width: 80px; }
+    .bar { background: var(--green); border-radius: 4px; height: 7px; }
+
+    .chart-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+
+    #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1a1a18; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; opacity: 0; transition: all 0.2s; pointer-events: none; z-index: 999; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">Awa<span>Jobs</span></div>
+  <a href="/" class="btn">← Dashboard</a>
+</header>
+
+<div class="container">
+
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="val">{{ total_jobs }}</div>
+      <div class="lbl">Offres en base</div>
+    </div>
+    <div class="kpi">
+      <div class="val" style="color:var(--green)">{{ total_approved }}</div>
+      <div class="lbl">Approuvées (⭐ Top + ✓)</div>
+    </div>
+    <div class="kpi">
+      <div class="val" style="color:var(--red)">{{ total_purged }}</div>
+      <div class="lbl">Offres purgées (total)</div>
+    </div>
+  </div>
+
+  {% if approved_by_source %}
+  <div class="section">
+    <h2>Approuvées par source</h2>
+    <div class="chart-box">
+      <canvas id="chart" height="110"></canvas>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="table-wrap">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th onclick="sortTable(0)" data-col="0">Source <span class="arrow">↕</span></th>
+            <th onclick="sortTable(1)" data-col="1" class="sorted">Approuvées <span class="arrow">↓</span></th>
+            <th onclick="sortTable(2)" data-col="2">Total scrapées <span class="arrow">↕</span></th>
+            <th onclick="sortTable(3)" data-col="3">% <span class="arrow">↕</span></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in approved_by_source %}
+          <tr>
+            <td>{{ r.source }}</td>
+            <td><strong>{{ r.approved }}</strong></td>
+            <td>{{ r.total }}</td>
+            <td>{{ r.pct }}%</td>
+            <td><div class="bar-wrap"><div class="bar" style="width:{{ r.pct }}%"></div></div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <p style="color:var(--muted); font-size:13px; margin-bottom:2rem;">Aucune offre approuvée pour l'instant.</p>
+  {% endif %}
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+const labels = {{ approved_by_source | map(attribute='source') | list | tojson }};
+const dataApproved = {{ approved_by_source | map(attribute='approved') | list | tojson }};
+const dataTotal = {{ approved_by_source | map(attribute='total') | list | tojson }};
+
+if (labels.length) {
+  new Chart(document.getElementById('chart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Approuvées', data: dataApproved, backgroundColor: '#16a34a', borderRadius: 4 },
+        { label: 'Total scrapées', data: dataTotal, backgroundColor: '#e5e3de', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        x: { ticks: { font: { size: 11 }, maxRotation: 40 } },
+        y: { beginAtZero: true, ticks: { precision: 0 } }
+      }
+    }
+  });
+}
+
+let sortDir = [1, -1, 1, 1];
+function sortTable(col) {
+  const tbody = document.querySelector('#tbl tbody');
+  if (!tbody) return;
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  sortDir[col] *= -1;
+  rows.sort((a, b) => {
+    const va = a.cells[col].textContent.replace('%','').trim();
+    const vb = b.cells[col].textContent.replace('%','').trim();
+    const na = parseFloat(va), nb = parseFloat(vb);
+    const cmp = isNaN(na) ? va.localeCompare(vb) : na - nb;
+    return cmp * sortDir[col];
+  });
+  rows.forEach(r => tbody.appendChild(r));
+  document.querySelectorAll('th').forEach((th, i) => {
+    th.classList.toggle('sorted', i === col);
+    const a = th.querySelector('.arrow');
+    if (a) a.textContent = i === col ? (sortDir[col] === 1 ? '↑' : '↓') : '↕';
+  });
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --bg: #f8f7f4; --surface: #ffffff; --border: #e5e3de;
