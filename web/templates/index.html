@@ -85,7 +85,7 @@
     <a href="/stats" class="btn">📊 Stats</a>
     <button class="btn btn-primary" onclick="runScraper()">Lancer la collecte</button>
     <button class="btn" style="background:#7c3aed;color:white" onclick="trainModel()">🧠 Entraîner ML</button>
-    <button class="btn" style="background:#dc2626;color:white" onclick="purgeUsa()">🗑 Purger hors-Europe</button>
+    <button class="btn" style="background:#dc2626;color:white" onclick="purgeUsa()">🗑 Purger</button>
   </div>
 </header>
 
@@ -129,7 +129,7 @@
   </div>
 
   <div class="tab-bar">
-    {% for tab, lbl in [('all','Toutes'), ('new','Nouvelles'), ('top','⭐ Top'), ('yes','Approuvées'), ('maybe','À voir'), ('applied','Postulées'), ('no','Rejetées'), ('funding','💰 Fundings')] %}
+    {% for tab, lbl in [('all','Toutes'), ('new','Nouvelles'), ('top','⭐ Top'), ('yes','Approuvées'), ('maybe','À voir'), ('no','Rejetées'), ('funding','💰 Fundings')] %}
     <button class="tab {% if label_filter==tab %}active{% endif %}"
             onclick="applyFilter('label', '{{ tab }}')">{{ lbl }}</button>
     {% endfor %}

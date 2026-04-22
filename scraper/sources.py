@@ -90,13 +90,6 @@ SOURCES = [
         "type": "rss",
         "active": True,
     },
-    # ── UK — Neuroscience ─────────────────────────────────────────────────────
-    {
-        "name": "jobs.ac.uk — Neuroscience",
-        "url": "https://www.jobs.ac.uk/jobs/neuroscience/?format=rss",
-        "type": "rss",
-        "active": True,
-    },
     # ── Fundings ─────────────────────────────────────────────────────────────
     {
         "name": "Funding — EURAXESS Grants",
@@ -109,7 +102,30 @@ SOURCES = [
         "active": True,
         "category": "funding",
     },
-    # ── Belgique / France (pas de RSS officiel — scraping désactivé pour l'instant) ──
-    # FNRS, NWO, INSERM, JRC n'ont pas de flux RSS public fiable.
-    # Ils seront ajoutés via scraping HTML en Sprint 3.
+    # ── Belgique / France (scraping HTML) ────────────────────────────────────
+    {
+        "name": "CNRS — Emploi-ESR",
+        "url": "https://emploi.cnrs.fr/",
+        "type": "html",
+        "active": True,
+    },
+    {
+        "name": "INSERM — Softy",
+        "url": "https://inserm.softy.pro/offres",
+        "type": "html",
+        "active": True,
+    },
+    {
+        "name": "JRC — EU Jobs",
+        "url": "https://joint-research-centre.ec.europa.eu/jobs_en",
+        "type": "html",
+        "active": True,
+    },
+    # ── Norvège ──────────────────────────────────────────────────────────────
+    {
+        "name": "Jobbnorge (NO)",
+        "url": "https://www.jobbnorge.no/",
+        "type": "html",
+        "active": True,
+    },
 ]

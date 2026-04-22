@@ -196,17 +196,16 @@ def init_db():
             created_at TEXT NOT NULL
         )
     """)
-    # Pré-remplir avec les sources de sources.py si la table est vide
-    if conn.execute("SELECT COUNT(*) FROM sources").fetchone()[0] == 0:
-        try:
-            from scraper.sources import SOURCES
-            for s in SOURCES:
-                conn.execute(
-                    "INSERT OR IGNORE INTO sources (name, url, type, active, created_at) VALUES (?,?,?,?,?)",
-                    (s["name"], s["url"], s.get("type", "rss"), 1 if s.get("active") else 0, datetime.utcnow().isoformat())
-                )
-        except Exception:
-            pass
+    # Synchroniser toutes les sources de sources.py dans la DB (INSERT OR IGNORE)
+    try:
+        from scraper.sources import SOURCES
+        for s in SOURCES:
+            conn.execute(
+                "INSERT OR IGNORE INTO sources (name, url, type, active, created_at) VALUES (?,?,?,?,?)",
+                (s["name"], s["url"], s.get("type", "rss"), 1 if s.get("active") else 0, datetime.utcnow().isoformat())
+            )
+    except Exception:
+        pass
     conn.commit()
     conn.close()
     log.info("DB initialisée : %s", DB_PATH)
@@ -467,6 +466,12 @@ def scrape_jobbnorge() -> list:
     return jobs
 
 
+def _is_active(conn, name: str) -> bool:
+    """Retourne True si la source est active dans la DB (défaut True si absente)."""
+    row = conn.execute("SELECT active FROM sources WHERE name = ?", (name,)).fetchone()
+    return row is None or bool(row[0])
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 def run():
     init_db()
@@ -478,11 +483,14 @@ def run():
     # Sources originales (EURAXESS, Academic Jobs, CNRS)
     for source in RSS_SOURCES:
         all_jobs.extend(scrape_rss(source))
-    all_jobs.extend(scrape_cnrs())
-    all_jobs.extend(scrape_jobbnorge())
-    all_jobs.extend(scrape_inserm())
-    all_jobs.extend(scrape_jrc())
-
+    if _is_active(conn, "CNRS — Emploi-ESR"):
+        all_jobs.extend(scrape_cnrs())
+    if _is_active(conn, "Jobbnorge (NO)"):
+        all_jobs.extend(scrape_jobbnorge())
+    if _is_active(conn, "INSERM — Softy"):
+        all_jobs.extend(scrape_inserm())
+    if _is_active(conn, "JRC — EU Jobs"):
+        all_jobs.extend(scrape_jrc())
     # Emails transférés (LinkedIn alerts, etc.)
     try:
         from scraper.email_scraper import scrape_emails

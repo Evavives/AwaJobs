@@ -165,7 +165,7 @@ def _parse_generic_email(html: str, subject: str, sender: str) -> list:
         jobs.append({
             "id": _make_id(clean),
             "title": title[:200],
-            "source": f"Email ({sender})",
+            "source": "LinkedIn (email)",
             "url": clean,
             "description": f"Via email transféré : {subject}",
             "location": "",
