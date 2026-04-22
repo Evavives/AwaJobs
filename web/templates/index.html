@@ -213,7 +213,7 @@ function runScraper() {
 }
 
 function purgeUsa() {
-  if (!confirm('Supprimer les offres hors-Europe labelisées "non" ? Les offres approuvées/maybe/applied sont conservées.')) return;
+  if (!confirm('Supprimer les offres labelisées "non" ? Les offres top/approuvées sont conservées.')) return;
   fetch('/purge-usa', { method: 'POST' })
     .then(r => r.json())
     .then(d => {
