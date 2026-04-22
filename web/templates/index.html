@@ -61,12 +61,14 @@
 
     .job-actions { display: flex; gap: 6px; margin-top: 8px; }
     .action-btn { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: none; font-size: 12px; cursor: pointer; transition: all 0.15s; }
-    .action-btn.yes   { color: var(--green); }
-    .action-btn.no    { color: var(--red); }
-    .action-btn.maybe { color: var(--amber); }
-    .action-btn.yes:hover   { background: #dcfce7; border-color: #86efac; }
-    .action-btn.no:hover    { background: #fee2e2; border-color: #fca5a5; }
-    .action-btn.maybe:hover { background: #fef9c3; border-color: #fde047; }
+    .action-btn.yes     { color: var(--green); }
+    .action-btn.no      { color: var(--red); }
+    .action-btn.maybe   { color: var(--amber); }
+    .action-btn.funding { color: #7c3aed; }
+    .action-btn.yes:hover     { background: #dcfce7; border-color: #86efac; }
+    .action-btn.no:hover      { background: #fee2e2; border-color: #fca5a5; }
+    .action-btn.maybe:hover   { background: #fef9c3; border-color: #fde047; }
+    .action-btn.funding:hover { background: #ede9fe; border-color: #c4b5fd; }
     .action-btn.active { font-weight: 600; }
 
     .empty { text-align: center; padding: 3rem; color: var(--muted); }
@@ -165,6 +167,8 @@
                     onclick="label('{{ job.id }}', 'maybe')">~ À voir</button>
             <button class="action-btn no    {% if job.label=='no'    %}active{% endif %}"
                     onclick="label('{{ job.id }}', 'no')">✗ Non</button>
+            <button class="action-btn funding {% if job.category=='funding' %}active{% endif %}"
+                    onclick="markFunding('{{ job.id }}', this)">&#128188; Funding</button>
           </div>
         </div>
 
@@ -192,9 +196,20 @@ function label(jobId, lbl) {
     .then(() => {
       const card = document.getElementById('card-' + jobId);
       card.className = 'job-card label-' + lbl;
-      card.querySelectorAll('.action-btn').forEach(b => b.classList.remove('active'));
+      card.querySelectorAll('.action-btn:not(.funding)').forEach(b => b.classList.remove('active'));
       card.querySelector('.action-btn.' + lbl)?.classList.add('active');
       toast('Label mis à jour');
+    });
+}
+
+function markFunding(jobId, btn) {
+  const isActive = btn.classList.contains('active');
+  const newCat = isActive ? 'job' : 'funding';
+  fetch(`/category/${jobId}/${newCat}`, { method: 'POST' })
+    .then(r => r.json())
+    .then(() => {
+      btn.classList.toggle('active', !isActive);
+      toast(isActive ? 'Retiré des fundings' : 'Marqué comme funding');
     });
 }
 

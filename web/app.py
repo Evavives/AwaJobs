@@ -113,10 +113,22 @@ def index():
 @app.route("/label/<job_id>/<label>", methods=["POST"])
 @login_required
 def set_label(job_id, label):
-    if label not in ("yes", "no", "maybe", "new", "applied", "top"):
+    if label not in ("yes", "no", "maybe", "new", "top"):
         return jsonify({"error": "invalid label"}), 400
     conn = get_db()
     conn.execute("UPDATE jobs SET label=? WHERE id=?", (label, job_id))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/category/<job_id>/<cat>", methods=["POST"])
+@login_required
+def set_category(job_id, cat):
+    if cat not in ("job", "funding"):
+        return jsonify({"error": "invalid category"}), 400
+    conn = get_db()
+    conn.execute("UPDATE jobs SET category=? WHERE id=?", (cat, job_id))
     conn.commit()
     conn.close()
     return jsonify({"ok": True})
