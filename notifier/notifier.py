@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 DB_PATH      = os.environ.get("DB_PATH", "/data/awajobs.db")
 GMAIL_USER   = os.environ.get("GMAIL_USER", "awajobsradar@gmail.com")
 GMAIL_PASS   = os.environ.get("GMAIL_PASS", "")   # App Password 16 chars
-NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", "awajobsradar@gmail.com")
+NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", "eva.vives13@gmail.com")
 
 
 def get_new_jobs(conn, min_score: int = 2) -> list:
