@@ -66,12 +66,6 @@ KEYWORDS_POSITIVE = [
     "jugement moral", "process dissociation", "dual process",
     "political psychology", "psychologie politique",
     "cross-cultural psychology", "psychologie interculturelle",
-    # Fundings
-    "fellowship", "grant", "funding", "financement", "bourse",
-    "marie curie", "msca", "erc starting", "erc consolidator",
-    "veni", "vidi", "vici", "hfsp", "humboldt", "fyssen",
-    "fnrs", "fwo", "anr jcjc", "ramon y cajal", "ikerbasque",
-    "wellcome", "postdoctoral fellowship", "research grant",
 ]
 
 KEYWORDS_NEGATIVE = [
@@ -136,13 +130,7 @@ GEO_NEGATIVE = [
 
 
 FUNDING_KEYWORDS = [
-    "fellowship", "grant", "funding", "financement", "bourse",
-    "marie curie", "msca", "erc starting", "erc consolidator", "erc synergy",
-    "veni", "vidi", "vici", "hfsp", "humboldt fellowship", "fyssen",
-    "fnrs", "fwo postdoc", "anr jcjc", "ramon y cajal", "ikerbasque",
-    "wellcome award", "postdoctoral fellowship", "research grant",
-    "prix de thèse", "appel à projets", "call for proposals",
-    "bourse postdoctorale", "allocation de recherche",
+    "grant", "funding", "bourse", "fellowship", "financement", "fonds",
 ]
 
 
