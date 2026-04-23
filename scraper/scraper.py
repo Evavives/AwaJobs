@@ -527,15 +527,15 @@ def run():
         if save_job(conn, job):
             total_new += 1
 
-    # Purge automatique : supprimer les offres "no" de plus de 90 jours
+    # Purge automatique : supprimer les offres "no" de plus de 3 jours
     try:
         from datetime import timedelta
-        cutoff = (datetime.utcnow() - timedelta(days=90)).isoformat()
+        cutoff = (datetime.utcnow() - timedelta(days=3)).isoformat()
         deleted = conn.execute(
             "DELETE FROM jobs WHERE label='no' AND created_at < ?", (cutoff,)
         ).rowcount
         if deleted:
-            log.info("Purge auto : %d offres 'no' supprimées (> 90 jours)", deleted)
+            log.info("Purge auto : %d offres 'no' supprimées (> 3 jours)", deleted)
     except Exception as e:
         log.error("Purge auto erreur : %s", e)
 

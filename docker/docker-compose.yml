@@ -15,7 +15,7 @@ services:
       - DB_PATH=/data/awajobs.db
       - GMAIL_USER=awajobsradar@gmail.com
       - GMAIL_PASS=${GMAIL_PASS}        # défini dans .env
-      - NOTIFY_EMAIL=awajobsradar@gmail.com
+      - NOTIFY_EMAIL=eva.vives13@gmail.com
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000"]
       interval: 30s

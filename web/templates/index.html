@@ -229,7 +229,7 @@ function runScraper() {
 
 function purgeUsa() {
   if (!confirm('Supprimer les offres labelisées "non" ? Les offres top/approuvées sont conservées.')) return;
-  fetch('/purge-usa', { method: 'POST' })
+  fetch('/purge-all-no', { method: 'POST' })
     .then(r => r.json())
     .then(d => {
       if (d.ok) {
