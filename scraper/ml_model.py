@@ -30,6 +30,14 @@ def _load_training_data():
     rows = conn.execute(
         "SELECT title, description, label FROM jobs WHERE label NOT IN ('new')"
     ).fetchall()
+    # Inclure aussi les offres purgées (données d'entraînement conservées)
+    try:
+        purged = conn.execute(
+            "SELECT title, description, label FROM ml_training"
+        ).fetchall()
+        rows = list(rows) + list(purged)
+    except Exception:
+        pass
     conn.close()
 
     X, y = [], []

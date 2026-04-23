@@ -184,6 +184,21 @@ def init_db():
             created_at TEXT NOT NULL
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS purged_ids (
+            id         TEXT PRIMARY KEY,
+            purged_at  TEXT NOT NULL
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS ml_training (
+            id          TEXT PRIMARY KEY,
+            title       TEXT NOT NULL,
+            description TEXT,
+            label       TEXT NOT NULL,
+            purged_at   TEXT NOT NULL
+        )
+    """)
     # Synchroniser toutes les sources de sources.py dans la DB (INSERT OR IGNORE)
     try:
         from scraper.sources import SOURCES
@@ -267,6 +282,11 @@ def save_job(conn, job: dict):
         "SELECT id FROM jobs WHERE id = ?", (job["id"],)
     ).fetchone()
     if existing:
+        return False
+    blacklisted = conn.execute(
+        "SELECT id FROM purged_ids WHERE id = ?", (job["id"],)
+    ).fetchone()
+    if blacklisted:
         return False
     category = detect_category(job.get("title", ""), job.get("description", "") or "")
     conn.execute(
@@ -531,11 +551,30 @@ def run():
     try:
         from datetime import timedelta
         cutoff = (datetime.utcnow() - timedelta(days=3)).isoformat()
-        deleted = conn.execute(
-            "DELETE FROM jobs WHERE label='no' AND created_at < ?", (cutoff,)
-        ).rowcount
-        if deleted:
-            log.info("Purge auto : %d offres 'no' supprimées (> 3 jours)", deleted)
+        to_purge = conn.execute(
+            "SELECT id FROM jobs WHERE label='no' AND created_at < ?", (cutoff,)
+        ).fetchall()
+        if to_purge:
+            purge_ids = [r[0] for r in to_purge]
+            now = datetime.utcnow().isoformat()
+            # Sauvegarder pour le ML avant suppression
+            rows_full = conn.execute(
+                f"SELECT id, title, description, label FROM jobs WHERE id IN ({','.join('?'*len(purge_ids))})",
+                purge_ids
+            ).fetchall()
+            conn.executemany(
+                "INSERT OR IGNORE INTO ml_training (id, title, description, label, purged_at) VALUES (?, ?, ?, ?, ?)",
+                [(r[0], r[1], r[2], r[3], now) for r in rows_full]
+            )
+            conn.executemany(
+                "INSERT OR IGNORE INTO purged_ids (id, purged_at) VALUES (?, ?)",
+                [(pid, now) for pid in purge_ids]
+            )
+            conn.execute(
+                f"DELETE FROM jobs WHERE id IN ({','.join('?'*len(purge_ids))})",
+                purge_ids
+            )
+            log.info("Purge auto : %d offres 'no' supprimées (> 3 jours)", len(purge_ids))
     except Exception as e:
         log.error("Purge auto erreur : %s", e)
 

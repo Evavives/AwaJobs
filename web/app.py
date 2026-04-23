@@ -54,7 +54,18 @@ def get_db():
             deleted    INTEGER NOT NULL,
             type       TEXT NOT NULL
         )""",
-        "UPDATE jobs SET source = 'LinkedIn (email)' WHERE source LIKE 'Email (%'",  # ← ajoute cette ligne
+        "UPDATE jobs SET source = 'LinkedIn (email)' WHERE source LIKE 'Email (%'",
+        """CREATE TABLE IF NOT EXISTS ml_training (
+            id          TEXT PRIMARY KEY,
+            title       TEXT NOT NULL,
+            description TEXT,
+            label       TEXT NOT NULL,
+            purged_at   TEXT NOT NULL
+        )""",
+        """CREATE TABLE IF NOT EXISTS purged_ids (
+            id        TEXT PRIMARY KEY,
+            purged_at TEXT NOT NULL
+        )""",
     ]:
         try:
             conn.execute(sql)
@@ -261,10 +272,21 @@ def stats_page():
 def purge_all_no():
     """Supprime TOUTES les offres labelées 'no'."""
     conn = get_db()
+    now = datetime.utcnow().isoformat()
+    rows = conn.execute("SELECT id, title, description, label FROM jobs WHERE label='no'").fetchall()
+    if rows:
+        conn.executemany(
+            "INSERT OR IGNORE INTO ml_training (id, title, description, label, purged_at) VALUES (?, ?, ?, ?, ?)",
+            [(r["id"], r["title"], r["description"], r["label"], now) for r in rows]
+        )
+        conn.executemany(
+            "INSERT OR IGNORE INTO purged_ids (id, purged_at) VALUES (?, ?)",
+            [(r["id"], now) for r in rows]
+        )
     deleted = conn.execute("DELETE FROM jobs WHERE label='no'").rowcount
     conn.execute(
         "INSERT INTO purge_log (purged_at, deleted, type) VALUES (?,?,?)",
-        (datetime.utcnow().isoformat(), deleted, "all-no")
+        (now, deleted, "all-no")
     )
     conn.commit()
     conn.close()
@@ -295,13 +317,26 @@ def purge_usa():
             to_delete.append(row["id"])
 
     if to_delete:
+        now = datetime.utcnow().isoformat()
+        rows_full = conn.execute(
+            f"SELECT id, title, description, label FROM jobs WHERE id IN ({','.join('?'*len(to_delete))})",
+            to_delete
+        ).fetchall()
+        conn.executemany(
+            "INSERT OR IGNORE INTO ml_training (id, title, description, label, purged_at) VALUES (?, ?, ?, ?, ?)",
+            [(r["id"], r["title"], r["description"], r["label"], now) for r in rows_full]
+        )
+        conn.executemany(
+            "INSERT OR IGNORE INTO purged_ids (id, purged_at) VALUES (?, ?)",
+            [(rid, now) for rid in to_delete]
+        )
         conn.execute(
             f"DELETE FROM jobs WHERE id IN ({','.join('?'*len(to_delete))})",
             to_delete
         )
         conn.execute(
             "INSERT INTO purge_log (purged_at, deleted, type) VALUES (?,?,?)",
-            (datetime.utcnow().isoformat(), len(to_delete), "hors-europe")
+            (now, len(to_delete), "hors-europe")
         )
         conn.commit()
     conn.close()
