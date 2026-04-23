@@ -530,7 +530,7 @@ def run():
     # Purge automatique : supprimer les offres "no" de plus de 90 jours
     try:
         from datetime import timedelta
-        cutoff = (datetime.utcnow() - timedelta(days=3)).isoformat()
+        cutoff = (datetime.utcnow() - timedelta(days=90)).isoformat()
         deleted = conn.execute(
             "DELETE FROM jobs WHERE label='no' AND created_at < ?", (cutoff,)
         ).rowcount
